@@ -1,0 +1,15 @@
+# Files and folders to ignore
+
+# 1. intermediate files
+*.o
+*.d
+*.asv
+
+# 2. Build files
+
+**/Build/*
+!**/Build/CMakeLists.txt
+!**/Build/CMAKE_README.txt
+
+# 3. IDE generated files
+.vscode
