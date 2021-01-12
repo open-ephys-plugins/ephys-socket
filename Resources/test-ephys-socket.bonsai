@@ -1,0 +1,39 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<WorkflowBuilder Version="2.6.0"
+                 xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+                 xmlns:eph="clr-namespace:Bonsai.Ephys;assembly=Bonsai.Ephys"
+                 xmlns:p1="clr-namespace:Bonsai.JonsUtils;assembly=Bonsai.JonsUtils"
+                 xmlns="https://bonsai-rx.org/2018/workflow">
+  <Workflow>
+    <Nodes>
+      <Expression xsi:type="Combinator">
+        <Combinator xsi:type="eph:Rhd2000EvalBoard">
+          <eph:BitFileName>main.bit</eph:BitFileName>
+          <eph:SampleRate>SampleRate20000Hz</eph:SampleRate>
+          <eph:ExternalFastSettleEnabled>false</eph:ExternalFastSettleEnabled>
+          <eph:LowerBandwidth>0.1</eph:LowerBandwidth>
+          <eph:UpperBandwidth>7500</eph:UpperBandwidth>
+          <eph:DspCutoffFrequency>1</eph:DspCutoffFrequency>
+          <eph:DspEnabled>true</eph:DspEnabled>
+          <eph:CableDelayA xsi:nil="true" />
+          <eph:CableDelayB xsi:nil="true" />
+          <eph:CableDelayC xsi:nil="true" />
+          <eph:CableDelayD xsi:nil="true" />
+        </Combinator>
+      </Expression>
+      <Expression xsi:type="MemberSelector">
+        <Selector>AmplifierData</Selector>
+      </Expression>
+      <Expression xsi:type="Combinator">
+        <Combinator xsi:type="p1:OpenCVMatSocket">
+          <p1:addr>localhost</p1:addr>
+          <p1:port>5000</p1:port>
+        </Combinator>
+      </Expression>
+    </Nodes>
+    <Edges>
+      <Edge From="0" To="1" Label="Source1" />
+      <Edge From="1" To="2" Label="Source1" />
+    </Edges>
+  </Workflow>
+</WorkflowBuilder>
