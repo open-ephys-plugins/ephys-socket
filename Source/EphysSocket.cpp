@@ -16,7 +16,7 @@ EphysSocket::EphysSocket(SourceNode* sn) : DataThread(sn)
 {
     socket = new DatagramSocket();
     socket->bindToPort(port);
-    connected = (socket->waitUntilReady(true, 1000) == 1); // Try to automatically open, dont worry if it does not work
+    connected = (socket->waitUntilReady(true, 500) == 1); // Try to automatically open, dont worry if it does not work
     sourceBuffers.add(new DataBuffer(num_channels, num_channels * num_samp * 4 * 5)); // start with 2 channels and automatically resize
     recvbuf = (uint16_t *)malloc(num_channels * num_samp * 2);
     convbuf = (float *)malloc(num_channels * num_samp * 4);
@@ -90,8 +90,25 @@ void  EphysSocket::tryToConnect()
 {
     socket->shutdown();
     socket = new DatagramSocket();
-    socket->bindToPort(port);
-    connected = (socket->waitUntilReady(true, 1000) == 1);
+    bool bound = socket->bindToPort(port);
+    if (bound)
+    {
+        std::cout << "Socket bound to port " << port << std::endl;
+        connected = (socket->waitUntilReady(true, 500) == 1);
+    }
+    else {
+        std::cout << "Could not bind socket to port " << port << std::endl;
+    }
+    
+
+    if (connected)
+    {
+        std::cout << "Socket connected." << std::endl;
+
+    }
+    else {
+        std::cout << "Socket failed to connect" << std::endl;
+    }
 }
 
 bool EphysSocket::stopAcquisition()
