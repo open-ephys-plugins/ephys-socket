@@ -1,8 +1,8 @@
 # Ephys Socket plugin
-A simple UDP server for receiving raw matrix data. It can be used for communication with e.g. bonsai
+A simple UDP server for receiving raw matrix data. It can be used for communication with e.g. [Bonsai](https://bonsai-rx.org).
 
 ### Building the plugins
-Building the plugins requires [CMake](https://cmake.org/). Detailed instructions on how to build open ephys plugins with CMake can be found in [our wiki](https://open-ephys.atlassian.net/wiki/spaces/OEW/pages/1259110401/Plugin+CMake+Builds).
+Building the plugins requires [CMake](https://cmake.org/). Detailed instructions on how to build open ephys plugins with CMake can be found in [the Open Ephys GUI documentation](https://open-ephys.github.io/gui-docs/Developer-Guide/Compiling-plugins.html).
 
 ## Attribution
 Developed by Jonathan Newman (@jonnew).
