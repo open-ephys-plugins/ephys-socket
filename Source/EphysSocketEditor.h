@@ -12,7 +12,7 @@ namespace EphysSocketNode
 {
     class EphysSocket;
 
-    class EphysSocketEditor : public GenericEditor
+    class EphysSocketEditor : public GenericEditor, public Label::Listener
     {
 
     public:
@@ -29,10 +29,13 @@ namespace EphysSocketNode
         void stopAcquisition();
 
         /** Called when configuration is saved. Adds editors config to xml. */
-        void saveEditorParameters(XmlElement* xml);
+        void saveCustomParameters(XmlElement* xml) override;
 
         /** Called when configuration is loaded. Reads editors config from xml. */
-        void loadEditorParameters(XmlElement* xml);
+        void loadCustomParameters(XmlElement* xml) override;
+
+        /** Called when label is changed */
+        void labelTextChanged(Label* label);
 
     private:
 
@@ -41,27 +44,27 @@ namespace EphysSocketNode
 
         // Port
         ScopedPointer<Label> portLabel;
-        ScopedPointer<TextEditor> portText;
+        ScopedPointer<Label> portInput;
 
         // Chans
-        ScopedPointer<Label> chanLabel;
-        ScopedPointer<TextEditor> chanText;
+        ScopedPointer<Label> channelCountLabel;
+        ScopedPointer<Label> channelCountInput;
 
         // Samples
-        ScopedPointer<Label> sampLabel;
-        ScopedPointer<TextEditor> sampText;
+        ScopedPointer<Label> bufferSizeLabel;
+        ScopedPointer<Label> bufferSizeInput;
 
         // Fs
-        ScopedPointer<Label> fsLabel;
-        ScopedPointer<TextEditor> fsText;
+        ScopedPointer<Label> sampleRateLabel;
+        ScopedPointer<Label> sampleRateInput;
 
         // Scale
         ScopedPointer<Label> scaleLabel;
-        ScopedPointer<TextEditor> scaleText;
+        ScopedPointer<Label> scaleInput;
 
         // Offset
         ScopedPointer<Label> offsetLabel;
-        ScopedPointer<TextEditor> offsetText;
+        ScopedPointer<Label> offsetInput;
 
         // Transpose
         TextButton transposeButton{ "Transpose" };

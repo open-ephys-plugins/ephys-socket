@@ -26,52 +26,60 @@ EphysSocketEditor::EphysSocketEditor(GenericProcessor* parentNode, EphysSocket *
     portLabel->setColour(Label::textColourId, Colours::darkgrey);
     addAndMakeVisible(portLabel);
 
-    portText = new TextEditor("Port");
-    portText->setFont(Font("Small Text", 10, Font::plain));
-    portText->setText(std::to_string(node->port));
-    portText->setBounds(5, 70, 65, 15);
-    addAndMakeVisible(portText);
+    portInput = new Label("Port", String(node->port));
+    portInput->setFont(Font("Small Text", 10, Font::plain));
+    portInput->setColour(Label::backgroundColourId, Colours::lightgrey);
+    portInput->setEditable(true);
+    portInput->addListener(this);
+    portInput->setBounds(5, 70, 65, 15);
+    addAndMakeVisible(portInput);
 
     //---
 
     // Num chans
-    chanLabel = new Label("Num. Ch.", "Num. Ch.");
-    chanLabel->setFont(Font("Small Text", 10, Font::plain));
-    chanLabel->setBounds(80, 30, 65, 8);
-    chanLabel->setColour(Label::textColourId, Colours::darkgrey);
-    addAndMakeVisible(chanLabel);
+    channelCountLabel = new Label("Num. Ch.", "Num. Ch.");
+    channelCountLabel->setFont(Font("Small Text", 10, Font::plain));
+    channelCountLabel->setBounds(80, 30, 65, 8);
+    channelCountLabel->setColour(Label::textColourId, Colours::darkgrey);
+    addAndMakeVisible(channelCountLabel);
 
-    chanText = new TextEditor("Num. Ch.");
-    chanText->setFont(Font("Small Text", 10, Font::plain));
-    chanText->setText(std::to_string(node->num_channels));
-    chanText->setBounds(80, 40, 65, 15);
-    addAndMakeVisible(chanText);
+    channelCountInput = new Label("Channel count", String(node->num_channels));
+    channelCountInput->setFont(Font("Small Text", 10, Font::plain));
+    channelCountInput->setBounds(80, 40, 65, 15);
+    channelCountInput->setColour(Label::backgroundColourId, Colours::lightgrey);
+    channelCountInput->setEditable(true);
+    channelCountInput->addListener(this);
+    addAndMakeVisible(channelCountInput);
 
     // Num samples
-    sampLabel = new Label("Num. Samp.", "Num. Samp.");
-    sampLabel->setFont(Font("Small Text", 10, Font::plain));
-    sampLabel->setBounds(80, 60, 65, 8);
-    sampLabel->setColour(Label::textColourId, Colours::darkgrey);
-    addAndMakeVisible(sampLabel);
+    bufferSizeLabel = new Label("Buffer Size", "Buffer Size");
+    bufferSizeLabel->setFont(Font("Small Text", 10, Font::plain));
+    bufferSizeLabel->setBounds(80, 60, 65, 8);
+    bufferSizeLabel->setColour(Label::textColourId, Colours::darkgrey);
+    addAndMakeVisible(bufferSizeLabel);
 
-    sampText = new TextEditor("Num. Samp.");
-    sampText->setFont(Font("Small Text", 10, Font::plain));
-    sampText->setText(std::to_string(node->num_samp));
-    sampText->setBounds(80, 70, 65, 15);
-    addAndMakeVisible(sampText);
+    bufferSizeInput = new Label ("Buffer Size", String(node->num_samp));
+    bufferSizeInput->setFont(Font("Small Text", 10, Font::plain));
+    bufferSizeInput->setBounds(80, 70, 65, 15);
+    bufferSizeInput->setEditable(true);
+    bufferSizeInput->setColour(Label::backgroundColourId, Colours::lightgrey);
+    bufferSizeInput->addListener(this);
+    addAndMakeVisible(bufferSizeInput);
 
     // Fs
-    fsLabel = new Label("Fs (Hz)", "Fs (Hz)");
-    fsLabel->setFont(Font("Small Text", 10, Font::plain));
-    fsLabel->setBounds(80, 90, 65, 8);
-    fsLabel->setColour(Label::textColourId, Colours::darkgrey);
-    addAndMakeVisible(fsLabel);
+    sampleRateLabel = new Label("Sample Rate (Hz)", "Sample Rate (Hz)");
+    sampleRateLabel->setFont(Font("Small Text", 10, Font::plain));
+    sampleRateLabel->setBounds(80, 90, 85, 8);
+    sampleRateLabel->setColour(Label::textColourId, Colours::darkgrey);
+    addAndMakeVisible(sampleRateLabel);
 
-    fsText = new TextEditor("Fs (Hz)");
-    fsText->setFont(Font("Small Text", 10, Font::plain));
-    fsText->setText(std::to_string(node->sample_rate));
-    fsText->setBounds(80, 100, 65, 15);
-    addAndMakeVisible(fsText);
+    sampleRateInput = new Label("Fs (Hz)", String((int) node->sample_rate));
+    sampleRateInput->setFont(Font("Small Text", 10, Font::plain));
+    sampleRateInput->setBounds(80, 100, 65, 15);
+    sampleRateInput->setEditable(true);
+    sampleRateInput->setColour(Label::backgroundColourId, Colours::lightgrey);
+    sampleRateInput->addListener(this);
+    addAndMakeVisible(sampleRateInput);
 
     //---
 
@@ -82,11 +90,13 @@ EphysSocketEditor::EphysSocketEditor(GenericProcessor* parentNode, EphysSocket *
     scaleLabel->setColour(Label::textColourId, Colours::darkgrey);
     addAndMakeVisible(scaleLabel);
 
-    scaleText = new TextEditor("Scale");
-    scaleText->setFont(Font("Small Text", 10, Font::plain));
-    scaleText->setText(std::to_string(node->data_scale));
-    scaleText->setBounds(155, 40, 65, 15);
-    addAndMakeVisible(scaleText);
+    scaleInput = new Label("Scale", String(node->data_scale));
+    scaleInput->setFont(Font("Small Text", 10, Font::plain));
+    scaleInput->setBounds(155, 40, 65, 15);
+    scaleInput->setEditable(true);
+    scaleInput->setColour(Label::backgroundColourId, Colours::lightgrey);
+    scaleInput->addListener(this);
+    addAndMakeVisible(scaleInput);
 
     // Offset
     offsetLabel = new Label("Offset", "Offset");
@@ -95,35 +105,119 @@ EphysSocketEditor::EphysSocketEditor(GenericProcessor* parentNode, EphysSocket *
     offsetLabel->setColour(Label::textColourId, Colours::darkgrey);
     addAndMakeVisible(offsetLabel);
 
-    offsetText = new TextEditor("Offset");
-    offsetText->setFont(Font("Small Text", 10, Font::plain));
-    offsetText->setText(std::to_string(node->data_offset));
-    offsetText->setBounds(155, 70, 65, 15);
-    addAndMakeVisible(offsetText);
+    offsetInput = new Label("Offset", String(node->data_offset));
+    offsetInput->setFont(Font("Small Text", 10, Font::plain));
+    offsetInput->setBounds(155, 70, 65, 15);
+    offsetInput->setEditable(true);
+    offsetInput->setColour(Label::backgroundColourId, Colours::lightgrey);
+    offsetInput->addListener(this);
+    addAndMakeVisible(offsetInput);
 
     transposeButton.setBounds(155, 95, 65, 20);
     transposeButton.setClickingTogglesState(true);
-    addAndMakeVisible(transposeButton);
+    transposeButton.setToggleState(true, false);
+   // addAndMakeVisible(transposeButton);
+}
+
+void EphysSocketEditor::labelTextChanged(Label* label)
+{
+
+    if (label == channelCountInput)
+    {
+
+        std::cout << "Label text changed" << std::endl;
+
+        int num_channels = channelCountInput->getText().getIntValue();
+
+        if (num_channels > 0 && num_channels < 1000)
+        {
+            node->num_channels = num_channels;
+            CoreServices::updateSignalChain(this);
+        }
+        else {
+            channelCountInput->setText(String(node->num_channels), dontSendNotification);
+        }
+        
+    }
+    else if (label == sampleRateInput)
+    {
+        float sampleRate = sampleRateInput->getText().getFloatValue();
+
+        if (sampleRate > 0 && sampleRate < 50000.0f)
+        {
+            node->sample_rate = sampleRate;
+            CoreServices::updateSignalChain(this);
+        }
+        else {
+            sampleRateInput->setText(String(node->sample_rate), dontSendNotification);
+        }
+        
+    }
+    else if (label == portInput)
+    {
+        int port = portInput->getText().getIntValue();
+
+        if (port > 1023 && port < 65535)
+        {
+            node->port = port;
+        }
+        else {
+            portInput->setText(String(node->port), dontSendNotification);
+        }
+    }
+    else if (label == bufferSizeInput)
+    {
+        int bufferSize = bufferSizeInput->getText().getIntValue();
+
+        if (bufferSize > 0 && bufferSize < 2048)
+        {
+            node->num_samp = bufferSize;
+        }
+        else {
+            bufferSizeInput->setText(String(node->num_samp), dontSendNotification);
+        }
+    }
+    else if (label == scaleInput)
+    {
+        float scale = scaleInput->getText().getFloatValue();
+
+        if (scale > 0.0f && scale < 9999.9f)
+        {
+            node->data_scale = scale;
+        }
+        else {
+            scaleInput->setText(String(node->data_scale), dontSendNotification);
+        }
+    }
+    else if (label == offsetInput)
+    {
+        int offset = offsetInput->getText().getIntValue();
+
+        if (offset > 0 && offset < 65536)
+        {
+            node->data_offset = offset;
+        }
+        else {
+            offsetInput->setText(String(node->data_offset), dontSendNotification);
+        }
+    }
 }
 
 void EphysSocketEditor::startAcquisition()
 {
     // Disable the whole gui
-    portText->setEnabled(false);
-    chanText->setEnabled(false);
-    sampText->setEnabled(false);
-    fsText->setEnabled(false);
-    scaleText->setEnabled(false);
-    offsetText->setEnabled(false);
+    portInput->setEnabled(false);
+    channelCountInput->setEnabled(false);
+    sampleRateInput->setEnabled(false);
+    bufferSizeInput->setEnabled(false);
+    scaleInput->setEnabled(false);
+    offsetInput->setEnabled(false);
     connectButton->setEnabled(false);
     transposeButton.setEnabled(false);
 
     // Set the channels etc
-    node->num_channels = chanText->getText().getIntValue();
-    node->num_samp = sampText->getText().getIntValue();
-    node->sample_rate = fsText->getText().getFloatValue();
-    node->data_scale = scaleText->getText().getFloatValue();
-    node->data_offset = offsetText->getText().getIntValue();
+    node->data_scale = scaleInput->getText().getFloatValue();
+    node->data_offset = offsetInput->getText().getIntValue();
     node->transpose = transposeButton.getToggleState();
 
     node->resizeChanSamp();
@@ -132,47 +226,62 @@ void EphysSocketEditor::startAcquisition()
 void EphysSocketEditor::stopAcquisition()
 {
     // Reenable the whole gui
-    portText->setEnabled(true);
-    chanText->setEnabled(true);
-    sampText->setEnabled(true);
-    fsText->setEnabled(true);
-    scaleText->setEnabled(true);
-    offsetText->setEnabled(true);
+    portInput->setEnabled(true);
+    channelCountInput->setEnabled(true);
+    sampleRateInput->setEnabled(true);
+    bufferSizeInput->setEnabled(true);
+    scaleInput->setEnabled(true);
+    offsetInput->setEnabled(true);
     connectButton->setEnabled(true);
     transposeButton.setEnabled(true);
 }
 
 void EphysSocketEditor::buttonEvent(Button* button)
 {
-    // Only one button
-    node->port = portText->getText().getIntValue();
-    node->tryToConnect();
+
+    if (button == connectButton)
+    {
+        node->port = portInput->getText().getIntValue();
+        node->tryToConnect();
+    }
+  
 }
 
-void EphysSocketEditor::saveEditorParameters(XmlElement* xmlNode)
+void EphysSocketEditor::saveCustomParameters(XmlElement* xmlNode)
 {
     XmlElement* parameters = xmlNode->createNewChildElement("PARAMETERS");
 
-    parameters->setAttribute("port", portText->getText());
-    parameters->setAttribute("numchan", chanText->getText());
-    parameters->setAttribute("numsamp", sampText->getText());
-    parameters->setAttribute("fs", fsText->getText());
-    parameters->setAttribute("scale", scaleText->getText());
-    parameters->setAttribute("offset", offsetText->getText());
+    parameters->setAttribute("port", portInput->getText());
+    parameters->setAttribute("numchan", channelCountInput->getText());
+    parameters->setAttribute("numsamp", bufferSizeInput->getText());
+    parameters->setAttribute("fs", sampleRateInput->getText());
+    parameters->setAttribute("scale", scaleInput->getText());
+    parameters->setAttribute("offset", offsetInput->getText());
 }
 
-void EphysSocketEditor::loadEditorParameters(XmlElement* xmlNode)
+void EphysSocketEditor::loadCustomParameters(XmlElement* xmlNode)
 {
     forEachXmlChildElement(*xmlNode, subNode)
     {
         if (subNode->hasTagName("PARAMETERS"))
         {
-            portText->setText(subNode->getStringAttribute("port", ""));
-            chanText->setText(subNode->getStringAttribute("numchan", ""));
-            sampText->setText(subNode->getStringAttribute("numsamp", ""));
-            fsText->setText(subNode->getStringAttribute("fs", ""));
-            scaleText->setText(subNode->getStringAttribute("scale", ""));
-            offsetText->setText(subNode->getStringAttribute("offset", ""));
+            portInput->setText(subNode->getStringAttribute("port", ""), dontSendNotification);
+            node->port = subNode->getIntAttribute("port", DEFAULT_PORT);
+
+            channelCountInput->setText(subNode->getStringAttribute("numchan", ""), dontSendNotification);
+            node->num_channels = subNode->getIntAttribute("numchan", DEFAULT_NUM_CHANNELS);
+
+            bufferSizeInput->setText(subNode->getStringAttribute("numsamp", ""), dontSendNotification);
+            node->num_samp = subNode->getIntAttribute("numsamp", DEFAULT_NUM_SAMPLES);
+
+            sampleRateInput->setText(subNode->getStringAttribute("fs", ""), dontSendNotification);
+            node->sample_rate = subNode->getDoubleAttribute("fs", DEFAULT_SAMPLE_RATE);
+
+            scaleInput->setText(subNode->getStringAttribute("scale", ""), dontSendNotification);
+            node->data_scale = subNode->getDoubleAttribute("scale", DEFAULT_DATA_SCALE);
+
+            offsetInput->setText(subNode->getStringAttribute("offset", ""), dontSendNotification);
+            node->data_offset = subNode->getIntAttribute("offset", DEFAULT_DATA_OFFSET);
         }
     }
 }
