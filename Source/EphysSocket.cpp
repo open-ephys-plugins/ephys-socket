@@ -12,14 +12,21 @@ DataThread* EphysSocket::createDataThread(SourceNode *sn)
     return new EphysSocket(sn);
 }
 
-EphysSocket::EphysSocket(SourceNode* sn) : DataThread(sn)
+
+EphysSocket::EphysSocket(SourceNode* sn) : DataThread(sn),
+    port(DEFAULT_PORT),
+    num_channels(DEFAULT_NUM_CHANNELS),
+    num_samp(DEFAULT_NUM_SAMPLES),
+    data_offset(DEFAULT_DATA_OFFSET),
+    data_scale(DEFAULT_DATA_SCALE),
+    sample_rate(DEFAULT_SAMPLE_RATE)
 {
     socket = new DatagramSocket();
     socket->bindToPort(port);
     connected = (socket->waitUntilReady(true, 500) == 1); // Try to automatically open, dont worry if it does not work
-    sourceBuffers.add(new DataBuffer(num_channels, num_channels * num_samp * 4 * 5)); // start with 2 channels and automatically resize
-    recvbuf = (uint16_t *)malloc(num_channels * num_samp * 2);
-    convbuf = (float *)malloc(num_channels * num_samp * 4);
+    sourceBuffers.add(new DataBuffer(num_channels, 10000)); // start with 2 channels and automatically resize
+    recvbuf = (uint16_t *) malloc(num_channels * num_samp * 2);
+    convbuf = (float *) malloc(num_channels * num_samp * 4);
 }
 
 GenericEditor* EphysSocket::createEditor(SourceNode* sn)
@@ -40,7 +47,7 @@ EphysSocket::~EphysSocket()
 
 void EphysSocket::resizeChanSamp()
 {
-    sourceBuffers[0]->resize(num_channels, num_channels * num_samp * 4 * 5);
+    sourceBuffers[0]->resize(num_channels, 10000);
     recvbuf = (uint16_t *)realloc(recvbuf, num_channels * num_samp * 2);
     convbuf = (float *)realloc(convbuf, num_channels * num_samp * 4);
     //timestamps.resize(num_samp);
@@ -82,6 +89,8 @@ bool EphysSocket::foundInputSource()
 
 bool EphysSocket::startAcquisition()
 {
+    resizeChanSamp();
+
     startThread();
     return true;
 }
@@ -128,9 +137,13 @@ bool EphysSocket::updateBuffer()
 {
     int rc = socket->read(recvbuf, num_channels * num_samp * 2, true);
 
-    if (rc == -1) return false;
+    if (rc == -1)
+    {
+        CoreServices::sendStatusMessage("Ephys Socket: Data shape mismatch");
+        return false;
+    }
 
-    // Transpose because the chunkSize arguement in addToBuffer does not seem to do anything
+    // Transpose because the chunkSize argument in addToBuffer does not seem to do anything
     if (transpose) {
         int k = 0;
         for (int i = 0; i < num_samp; i++) {

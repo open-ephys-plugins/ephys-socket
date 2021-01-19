@@ -3,6 +3,13 @@
 
 #include <DataThreadHeaders.h>
 
+const int DEFAULT_PORT = 9001;
+const float DEFAULT_SAMPLE_RATE = 30000.0f;
+const float DEFAULT_DATA_SCALE = 0.195f;
+const uint16_t DEFAULT_DATA_OFFSET = 32768;
+const int DEFAULT_NUM_SAMPLES = 256;
+const int DEFAULT_NUM_CHANNELS = 64;
+
 namespace EphysSocketNode
 {
     class EphysSocket : public DataThread, public Timer
@@ -21,13 +28,13 @@ namespace EphysSocketNode
         int getNumChannels() const;
 
         // User defined
-        int port = 5000;
-        float sample_rate = 30e3;
-        float data_scale = 0.195;
-        uint16_t data_offset = 32768;
+        int port;
+        float sample_rate;
+        float data_scale;
+        uint16_t data_offset;
         bool transpose = true;
-        int num_samp = 250;
-        int num_channels = 64;
+        int num_samp;
+        int num_channels;
 
         void resizeChanSamp();
         void tryToConnect();
