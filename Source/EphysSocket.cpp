@@ -34,10 +34,7 @@ GenericEditor* EphysSocket::createEditor(SourceNode* sn)
     return new EphysSocketEditor(sn, this);
 }
 
-void EphysSocket::timerCallback()
-{
-    stopTimer();
-}
+
 
 EphysSocket::~EphysSocket()
 {
@@ -50,8 +47,8 @@ void EphysSocket::resizeChanSamp()
     sourceBuffers[0]->resize(num_channels, 10000);
     recvbuf = (uint16_t *)realloc(recvbuf, num_channels * num_samp * 2);
     convbuf = (float *)realloc(convbuf, num_channels * num_samp * 4);
-    //timestamps.resize(num_samp);
-    //ttlEventWords.resize(num_samp);
+    timestamps.resize(num_samp);
+    ttlEventWords.resize(num_samp);
 }
 
 int EphysSocket::getNumChannels() const
@@ -91,6 +88,10 @@ bool EphysSocket::startAcquisition()
 {
     resizeChanSamp();
 
+    total_samples = 0;
+
+    startTimer(5000);
+
     startThread();
     return true;
 }
@@ -129,6 +130,8 @@ bool EphysSocket::stopAcquisition()
 
     waitForThreadToExit(500);
 
+    stopTimer();
+
     sourceBuffers[0]->clear();
     return true;
 }
@@ -142,7 +145,7 @@ bool EphysSocket::updateBuffer()
         CoreServices::sendStatusMessage("Ephys Socket: Data shape mismatch");
         return false;
     }
-
+   
     // Transpose because the chunkSize argument in addToBuffer does not seem to do anything
     if (transpose) {
         int k = 0;
@@ -156,7 +159,22 @@ bool EphysSocket::updateBuffer()
             convbuf[i] = 0.195 *  (float)(recvbuf[i] - 32768);
     }
 
-    sourceBuffers[0]->addToBuffer(convbuf, &timestamps.getReference(0), &ttlEventWords.getReference(0), num_samp, 1);
+    sourceBuffers[0]->addToBuffer(convbuf, 
+                                  &timestamps.getReference(0), 
+                                  &ttlEventWords.getReference(0), 
+                                  num_samp, 
+                                  1);
+
+    total_samples += num_samp;
 
     return true;
+}
+
+void EphysSocket::timerCallback()
+{
+    //std::cout << "Expected samples: " << int(sample_rate * 5) << ", Actual samples: " << total_samples << std::endl;
+    
+    relative_sample_rate = (sample_rate * 5) / float(total_samples);
+
+    total_samples = 0;
 }
