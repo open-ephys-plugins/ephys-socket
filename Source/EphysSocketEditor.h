@@ -46,6 +46,12 @@ namespace EphysSocketNode
         ScopedPointer<Label> portLabel;
         ScopedPointer<Label> portInput;
 
+        // Buffer size
+        ScopedPointer<Label> bufferSizeMainLabel;
+
+        // x label
+        ScopedPointer<Label> xLabel;
+
         // Chans
         ScopedPointer<Label> channelCountLabel;
         ScopedPointer<Label> channelCountInput;
