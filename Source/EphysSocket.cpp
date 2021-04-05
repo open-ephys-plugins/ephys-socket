@@ -151,12 +151,12 @@ bool EphysSocket::updateBuffer()
         int k = 0;
         for (int i = 0; i < num_samp; i++) {
             for (int j = 0; j < num_channels; j++) {
-                convbuf[k++] = 0.195 *  (float)(recvbuf[j*num_samp + i] - 32768);
+                convbuf[k++] = data_scale *  (float)(recvbuf[j*num_samp + i] - data_offset);
             }
         }
     } else {
         for (int i = 0; i < num_samp * num_channels; i++)
-            convbuf[i] = 0.195 *  (float)(recvbuf[i] - 32768);
+            convbuf[i] = data_scale *  (float)(recvbuf[i] - data_offset);
     }
 
     sourceBuffers[0]->addToBuffer(convbuf, 
