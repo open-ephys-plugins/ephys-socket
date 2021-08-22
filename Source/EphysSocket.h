@@ -21,10 +21,14 @@ namespace EphysSocketNode
 
         // Interface fulfillment
         bool foundInputSource() override;
-        int getNumDataOutputs(DataChannel::DataChannelTypes type, int subProcessor) const override;
-        int getNumTTLOutputs(int subprocessor) const override;
-        float getSampleRate(int subprocessor) const override;
-        float getBitVolts(const DataChannel* chan) const override;
+
+        void updateSettings(OwnedArray<ContinuousChannel>* continuousChannels,
+            OwnedArray<EventChannel>* eventChannels,
+            OwnedArray<SpikeChannel>* spikeChannels,
+            OwnedArray<DataStream>* sourceStreams,
+            OwnedArray<DeviceInfo>* devices,
+            OwnedArray<ConfigurationObject>* configurationObjects);
+
         int getNumChannels() const;
 
         // User defined
@@ -36,13 +40,13 @@ namespace EphysSocketNode
         int num_samp;
         int num_channels;
 
-        int total_samples;
+        int64 total_samples;
         float relative_sample_rate;
 
         void resizeChanSamp();
         void tryToConnect();
 
-        GenericEditor* createEditor(SourceNode* sn);
+        std::unique_ptr<GenericEditor> createEditor(SourceNode* sn);
         static DataThread* createDataThread(SourceNode* sn);
 
     private:
@@ -58,6 +62,11 @@ namespace EphysSocketNode
 
         uint16_t *recvbuf;
         float *convbuf;
+
+        Array<int64> timestamps;
+        Array<uint64> ttlEventWords;
+
+        int64 currentTimestamp;
 
         JUCE_DECLARE_NON_COPYABLE_WITH_LEAK_DETECTOR(EphysSocket);
     };

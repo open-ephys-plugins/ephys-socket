@@ -29,9 +29,12 @@ EphysSocket::EphysSocket(SourceNode* sn) : DataThread(sn),
     convbuf = (float *) malloc(num_channels * num_samp * 4);
 }
 
-GenericEditor* EphysSocket::createEditor(SourceNode* sn)
+std::unique_ptr<GenericEditor> EphysSocket::createEditor(SourceNode* sn)
 {
-    return new EphysSocketEditor(sn, this);
+
+    std::unique_ptr<EphysSocketEditor> editor = std::make_unique<EphysSocketEditor>(sn, this);
+
+    return editor;
 }
 
 
@@ -56,27 +59,43 @@ int EphysSocket::getNumChannels() const
     return num_channels;
 }
 
-int EphysSocket::getNumDataOutputs(DataChannel::DataChannelTypes type, int subproc) const
+void EphysSocket::updateSettings(OwnedArray<ContinuousChannel>* continuousChannels,
+    OwnedArray<EventChannel>* eventChannels,
+    OwnedArray<SpikeChannel>* spikeChannels,
+    OwnedArray<DataStream>* sourceStreams,
+    OwnedArray<DeviceInfo>* devices,
+    OwnedArray<ConfigurationObject>* configurationObjects)
 {
-    if (type == DataChannel::HEADSTAGE_CHANNEL)
-        return num_channels;
-    else
-        return 0; 
-}
 
-int EphysSocket::getNumTTLOutputs(int subproc) const
-{
-    return 0; 
-}
+    DataStream::Settings settings
+    {
+        "EphysSocketStream",
+        "description",
+        "identifier",
 
-float EphysSocket::getSampleRate(int subproc) const
-{
-    return sample_rate;
-}
+        sample_rate
 
-float EphysSocket::getBitVolts (const DataChannel* ch) const
-{
-    return 0.195f;
+    };
+
+    sourceStreams->add(new DataStream(settings));
+
+    for (int ch = 0; ch < num_channels; ch++)
+    {
+
+        ContinuousChannel::Settings settings{
+            ContinuousChannel::Type::ELECTRODE,
+            "CH" + String(ch + 1),
+            "description",
+            "identifier",
+
+            data_scale,
+
+            sourceStreams->getFirst()
+        };
+
+        continuousChannels->add(new ContinuousChannel(settings));
+    }
+
 }
 
 bool EphysSocket::foundInputSource()
@@ -93,6 +112,7 @@ bool EphysSocket::startAcquisition()
     startTimer(5000);
 
     startThread();
+
     return true;
 }
 
@@ -153,15 +173,19 @@ bool EphysSocket::updateBuffer()
             for (int j = 0; j < num_channels; j++) {
                 convbuf[k++] = 0.195 *  (float)(recvbuf[j*num_samp + i] - 32768);
             }
+            timestamps.set(i, total_samples + i);
         }
     } else {
         for (int i = 0; i < num_samp * num_channels; i++)
-            convbuf[i] = 0.195 *  (float)(recvbuf[i] - 32768);
+        {
+            convbuf[i] = 0.195 * (float)(recvbuf[i] - 32768);
+            timestamps.set(i, total_samples + i);
+        }
     }
 
     sourceBuffers[0]->addToBuffer(convbuf, 
-                                  &timestamps.getReference(0), 
-                                  &ttlEventWords.getReference(0), 
+                                  timestamps.getRawDataPointer(), 
+                                  ttlEventWords.getRawDataPointer(),
                                   num_samp, 
                                   1);
 
