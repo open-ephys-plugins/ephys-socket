@@ -76,7 +76,7 @@ float EphysSocket::getSampleRate(int subproc) const
 
 float EphysSocket::getBitVolts (const DataChannel* ch) const
 {
-    return 0.195f;
+    return data_scale;
 }
 
 bool EphysSocket::foundInputSource()
@@ -153,15 +153,20 @@ bool EphysSocket::updateBuffer()
             for (int j = 0; j < num_channels; j++) {
                 convbuf[k++] = data_scale *  (float)(recvbuf[j*num_samp + i] - data_offset);
             }
+            timestamps.set(i, total_samples + i);
         }
     } else {
         for (int i = 0; i < num_samp * num_channels; i++)
-            convbuf[i] = data_scale *  (float)(recvbuf[i] - data_offset);
+        {
+            convbuf[i] = data_scale * (float)(recvbuf[i] - data_offset);
+            timestamps.set(i, total_samples + i);
+        }
+            
     }
 
     sourceBuffers[0]->addToBuffer(convbuf, 
-                                  &timestamps.getReference(0), 
-                                  &ttlEventWords.getReference(0), 
+                                  timestamps.getRawDataPointer(), 
+                                  ttlEventWords.getRawDataPointer(), 
                                   num_samp, 
                                   1);
 
