@@ -17,8 +17,6 @@ jobs:
     - name: setup
       run: |
         sudo apt update
-        export CC=gcc-8
-        export CXX=g++-8
         cd ../..
         git clone https://github.com/open-ephys/plugin-GUI.git --branch testing
         sudo ./plugin-GUI/Resources/Scripts/install_linux_dependencies.sh
@@ -33,8 +31,7 @@ jobs:
     - name: deploy
       if: github.ref == 'refs/heads/master'
       env:
-        bintrayUser: ${{ secrets.bintrayUsername }}
-        bintrayApiKey: ${{ secrets.bintrayApiKey }}
+        artifactoryApiKey: ${{ secrets.artifactoryApiKey }}
         build_dir: "Build"
         repo: ${{ github.event.repository.name }}
         package: ${{ github.event.repository.name }}-linux
@@ -46,6 +43,4 @@ jobs:
         cp -r $build_dir/*.so plugins
         zipfile=${package}_${new_plugin_ver}.zip
         zip -r -X $zipfile plugins
-        user_info="$bintrayUser:$bintrayApiKey"
-        curl -T $zipfile --user $user_info https://api.bintray.com/content/$bintrayUser/$repo/$package/$new_plugin_ver/$zipfile
-        curl -X POST --user $user_info https://api.bintray.com/content/$bintrayUser/$repo/$package/$new_plugin_ver/publish
+        curl -H "X-JFrog-Art-Api:$artifactoryApiKey" -T $zipfile "https://openephys.jfrog.io/artifactory/EphysSocket-plugin/linux/$zipfile"
