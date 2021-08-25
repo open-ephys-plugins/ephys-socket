@@ -90,7 +90,7 @@ bool EphysSocket::startAcquisition()
 
     total_samples = 0;
 
-    startTimer(5000);
+    //startTimer(5000);
 
     startThread();
     return true;
@@ -130,7 +130,7 @@ bool EphysSocket::stopAcquisition()
 
     waitForThreadToExit(500);
 
-    stopTimer();
+    //stopTimer();
 
     sourceBuffers[0]->clear();
     return true;
@@ -181,5 +181,5 @@ void EphysSocket::timerCallback()
     
     relative_sample_rate = (sample_rate * 5) / float(total_samples);
 
-    total_samples = 0;
+    //total_samples = 0;
 }
