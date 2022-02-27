@@ -43,6 +43,8 @@ namespace EphysSocketNode
         int64 total_samples;
         float relative_sample_rate;
 
+        uint64 eventState;
+
         void resizeChanSamp();
         void tryToConnect();
 

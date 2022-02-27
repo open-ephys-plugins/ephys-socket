@@ -96,6 +96,17 @@ void EphysSocket::updateSettings(OwnedArray<ContinuousChannel>* continuousChanne
         continuousChannels->add(new ContinuousChannel(settings));
     }
 
+    EventChannel::Settings eventSettings{
+           EventChannel::Type::TTL,
+           "Events",
+           "description",
+           "identifier",
+           sourceStreams->getFirst(),
+           1
+    };
+
+    eventChannels->add(new EventChannel(eventSettings));
+
 }
 
 bool EphysSocket::foundInputSource()
@@ -109,7 +120,9 @@ bool EphysSocket::startAcquisition()
 
     total_samples = 0;
 
-    startTimer(5000);
+    eventState = 0;
+
+    //startTimer(5000);
 
     startThread();
 
@@ -174,12 +187,37 @@ bool EphysSocket::updateBuffer()
                 convbuf[k++] = 0.195 *  (float)(recvbuf[j*num_samp + i] - 32768);
             }
             timestamps.set(i, total_samples + i);
+            ttlEventWords.set(i, eventState);
+
+            if ((total_samples + i) % 15000 == 0)
+            {
+                if (eventState == 0)
+                    eventState = 1;
+                else
+                    eventState = 0;
+
+                std::cout << eventState << std::endl;
+            }
+                
         }
     } else {
         for (int i = 0; i < num_samp * num_channels; i++)
         {
             convbuf[i] = 0.195 * (float)(recvbuf[i] - 32768);
             timestamps.set(i, total_samples + i);
+            ttlEventWords.set(i, eventState);
+
+            if ((total_samples + i) % 15000 == 0)
+            {
+                if (eventState == 0)
+                    eventState = 1;
+                else
+                    eventState = 0;
+
+                std::cout << eventState << std::endl;
+            }
+
+
         }
     }
 
@@ -200,5 +238,5 @@ void EphysSocket::timerCallback()
     
     relative_sample_rate = (sample_rate * 5) / float(total_samples);
 
-    total_samples = 0;
+    //total_samples = 0;
 }
