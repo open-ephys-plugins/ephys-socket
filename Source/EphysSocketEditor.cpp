@@ -6,7 +6,7 @@
 
 using namespace EphysSocketNode;
 
-EphysSocketEditor::EphysSocketEditor(GenericProcessor* parentNode, EphysSocket *socket) : GenericEditor(parentNode, false)
+EphysSocketEditor::EphysSocketEditor(GenericProcessor* parentNode, EphysSocket *socket) : GenericEditor(parentNode)
 {
     node = socket;
 
@@ -248,7 +248,7 @@ void EphysSocketEditor::stopAcquisition()
     transposeButton.setEnabled(true);
 }
 
-void EphysSocketEditor::buttonEvent(Button* button)
+void EphysSocketEditor::buttonClicked(Button* button)
 {
 
     if (button == connectButton)
@@ -259,7 +259,7 @@ void EphysSocketEditor::buttonEvent(Button* button)
   
 }
 
-void EphysSocketEditor::saveCustomParameters(XmlElement* xmlNode)
+void EphysSocketEditor::saveCustomParametersToXml(XmlElement* xmlNode)
 {
     XmlElement* parameters = xmlNode->createNewChildElement("PARAMETERS");
 
@@ -271,7 +271,7 @@ void EphysSocketEditor::saveCustomParameters(XmlElement* xmlNode)
     parameters->setAttribute("offset", offsetInput->getText());
 }
 
-void EphysSocketEditor::loadCustomParameters(XmlElement* xmlNode)
+void EphysSocketEditor::loadCustomParametersFromXml(XmlElement* xmlNode)
 {
     forEachXmlChildElement(*xmlNode, subNode)
     {

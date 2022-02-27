@@ -6,13 +6,14 @@
 #endif
 
 #include <VisualizerEditorHeaders.h>
-//#include <EditorHeaders.h>
 
 namespace EphysSocketNode
 {
     class EphysSocket;
 
-    class EphysSocketEditor : public GenericEditor, public Label::Listener
+    class EphysSocketEditor : public GenericEditor, 
+                              public Label::Listener,
+                              public Button::Listener
     {
 
     public:
@@ -20,7 +21,7 @@ namespace EphysSocketNode
         EphysSocketEditor(GenericProcessor* parentNode, EphysSocket *node);
 
         /** Button listener callback, called by button when pressed. */
-        void buttonEvent(Button* button);
+        void buttonClicked(Button* button);
 
         /** Called by processor graph in beginning of the acqusition, disables editor completly. */
         void startAcquisition();
@@ -29,10 +30,10 @@ namespace EphysSocketNode
         void stopAcquisition();
 
         /** Called when configuration is saved. Adds editors config to xml. */
-        void saveCustomParameters(XmlElement* xml) override;
+        void saveCustomParametersToXml(XmlElement* xml) override;
 
         /** Called when configuration is loaded. Reads editors config from xml. */
-        void loadCustomParameters(XmlElement* xml) override;
+        void loadCustomParametersFromXml(XmlElement* xml) override;
 
         /** Called when label is changed */
         void labelTextChanged(Label* label);
