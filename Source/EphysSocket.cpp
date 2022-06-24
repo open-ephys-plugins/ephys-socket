@@ -50,7 +50,9 @@ void EphysSocket::resizeChanSamp()
     sourceBuffers[0]->resize(num_channels, 10000);
     recvbuf = (uint16_t *)realloc(recvbuf, num_channels * num_samp * 2);
     convbuf = (float *)realloc(convbuf, num_channels * num_samp * 4);
-    timestamps.resize(num_samp);
+    sampleNumbers.resize(num_samp);
+    timestamps.clear();
+    timestamps.insertMultiple(0, 0.0, num_samp);
     ttlEventWords.resize(num_samp);
 }
 
@@ -186,7 +188,7 @@ bool EphysSocket::updateBuffer()
             for (int j = 0; j < num_channels; j++) {
                 convbuf[k++] = 0.195 *  (float)(recvbuf[j*num_samp + i] - 32768);
             }
-            timestamps.set(i, total_samples + i);
+            sampleNumbers.set(i, total_samples + i);
             ttlEventWords.set(i, eventState);
 
             if ((total_samples + i) % 15000 == 0)
@@ -204,7 +206,7 @@ bool EphysSocket::updateBuffer()
         for (int i = 0; i < num_samp * num_channels; i++)
         {
             convbuf[i] = 0.195 * (float)(recvbuf[i] - 32768);
-            timestamps.set(i, total_samples + i);
+            sampleNumbers.set(i, total_samples + i);
             ttlEventWords.set(i, eventState);
 
             if ((total_samples + i) % 15000 == 0)
@@ -222,10 +224,11 @@ bool EphysSocket::updateBuffer()
     }
 
     sourceBuffers[0]->addToBuffer(convbuf, 
-                                  timestamps.getRawDataPointer(), 
-                                  ttlEventWords.getRawDataPointer(),
-                                  num_samp, 
-                                  1);
+        sampleNumbers.getRawDataPointer(),
+        timestamps.getRawDataPointer(),
+        ttlEventWords.getRawDataPointer(),
+        num_samp, 
+        1);
 
     total_samples += num_samp;
 
