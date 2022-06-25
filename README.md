@@ -83,4 +83,4 @@ Running the `ALL_BUILD` scheme will compile the plugin; running the `INSTALL` sc
 
 ## Attribution
 
-Developed by Jonathan Newman [@jonnew](https://github.com/jonnew).
+Developed by Jonathan Newman ([@jonnew](https://github.com/jonnew)).
