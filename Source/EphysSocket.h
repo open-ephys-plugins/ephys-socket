@@ -65,7 +65,8 @@ namespace EphysSocketNode
         uint16_t *recvbuf;
         float *convbuf;
 
-        Array<int64> timestamps;
+        Array<int64> sampleNumbers;
+        Array<double> timestamps;
         Array<uint64> ttlEventWords;
 
         int64 currentTimestamp;

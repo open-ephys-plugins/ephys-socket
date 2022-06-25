@@ -69,6 +69,13 @@ void EphysSocket::updateSettings(OwnedArray<ContinuousChannel>* continuousChanne
     OwnedArray<ConfigurationObject>* configurationObjects)
 {
 
+    continuousChannels->clear();
+    eventChannels->clear();
+    devices->clear();
+    spikeChannels->clear();
+    configurationObjects->clear();
+    sourceStreams->clear();
+
     DataStream::Settings settings
     {
         "EphysSocketStream",
@@ -80,6 +87,7 @@ void EphysSocket::updateSettings(OwnedArray<ContinuousChannel>* continuousChanne
     };
 
     sourceStreams->add(new DataStream(settings));
+    sourceBuffers[0]->resize(num_channels, 10000);
 
     for (int ch = 0; ch < num_channels; ch++)
     {
