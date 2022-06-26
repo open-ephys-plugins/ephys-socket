@@ -2,7 +2,7 @@
 
 ![ephys-socket-screenshot](Resources/ephys-socket.png)
 
-A simple UDP server for receiving raw matrix data. It can be used for communication with e.g. [Bonsai](https://bonsai-rx.org).
+A simple UDP server for receiving raw matrix data. It can be used to stream data from the `OpenCVMatSocket` in [Bonsai](https://bonsai-rx.org).
 
 ## Installation
 
