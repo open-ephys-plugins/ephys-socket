@@ -112,9 +112,7 @@ void EphysSocket::updateSettings(OwnedArray<ContinuousChannel>* continuousChanne
            "description",
            "identifier",
            sourceStreams->getFirst(),
-           1,
-           EventChannel::BinaryDataType::BINARY_BASE_VALUE,
-           0
+           1
     };
 
     eventChannels->add(new EventChannel(eventSettings));
