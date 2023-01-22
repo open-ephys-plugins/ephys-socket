@@ -191,40 +191,14 @@ bool EphysSocket::updateBuffer()
         return false;
     }
    
-    // Transpose because the chunkSize argument in addToBuffer does not seem to do anything
-    if (transpose) {
-        int k = 0;
-        for (int i = 0; i < num_samp; i++) {
-            for (int j = 0; j < num_channels; j++) {
-                convbuf[k++] = 0.195 *  (float)(recvbuf[j*num_samp + i] - 32768);
-            }
-            sampleNumbers.set(i, total_samples + i);
-            ttlEventWords.set(i, eventState);
-
-            if ((total_samples + i) % 15000 == 0)
-            {
-                if (eventState == 0)
-                    eventState = 1;
-                else
-                    eventState = 0;
-            }
+    int k = 0;
+    for (int i = 0; i < num_samp; i++) {
+        for (int j = 0; j < num_channels; j++) {
+            convbuf[k++] = data_scale *  (float)(recvbuf[j*num_samp + i] - data_offset);
+        }
+        sampleNumbers.set(i, total_samples++);
+        ttlEventWords.set(i, eventState);
                 
-        }
-    } else {
-        for (int i = 0; i < num_samp * num_channels; i++)
-        {
-            convbuf[i] = 0.195 * (float)(recvbuf[i] - 32768);
-            sampleNumbers.set(i, total_samples + i);
-            ttlEventWords.set(i, eventState);
-
-            if ((total_samples + i) % 15000 == 0)
-            {
-                if (eventState == 0)
-                    eventState = 1;
-                else
-                    eventState = 0;
-            }
-        }
     }
 
     sourceBuffers[0]->addToBuffer(convbuf, 
@@ -233,8 +207,6 @@ bool EphysSocket::updateBuffer()
         ttlEventWords.getRawDataPointer(),
         num_samp, 
         1);
-
-    total_samples += num_samp;
 
     return true;
 }
