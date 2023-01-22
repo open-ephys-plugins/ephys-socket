@@ -1,5 +1,5 @@
 ﻿<?xml version="1.0" encoding="utf-8"?>
-<WorkflowBuilder Version="2.6.0"
+<WorkflowBuilder Version="2.7.0"
                  xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
                  xmlns:eph="clr-namespace:Bonsai.Ephys;assembly=Bonsai.Ephys"
                  xmlns:dsp="clr-namespace:Bonsai.Dsp;assembly=Bonsai.Dsp"
@@ -36,9 +36,9 @@
         </Combinator>
       </Expression>
       <Expression xsi:type="Combinator">
-        <Combinator xsi:type="p1:OpenCVMatSocket">
+        <Combinator xsi:type="p1:OpenCVMatUDPClient">
           <p1:addr>localhost</p1:addr>
-          <p1:port>9001</p1:port>
+          <p1:port>5000</p1:port>
         </Combinator>
       </Expression>
     </Nodes>
