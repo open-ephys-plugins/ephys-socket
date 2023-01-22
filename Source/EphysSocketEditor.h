@@ -18,6 +18,7 @@ namespace EphysSocketNode
 
     public:
 
+        /** Constructor */
         EphysSocketEditor(GenericProcessor* parentNode, EphysSocket *node);
 
         /** Button listener callback, called by button when pressed. */

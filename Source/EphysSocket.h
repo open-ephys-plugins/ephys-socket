@@ -12,16 +12,27 @@ const int DEFAULT_NUM_CHANNELS = 64;
 
 namespace EphysSocketNode
 {
-    class EphysSocket : public DataThread, public Timer
+    class EphysSocket : public DataThread
     {
 
     public:
+
+        /** Constructor */
         EphysSocket(SourceNode* sn);
+        
+        /** Destructor */
         ~EphysSocket();
 
-        // Interface fulfillment
+        /** Creates custom editor */
+        std::unique_ptr<GenericEditor> createEditor(SourceNode* sn);
+
+        /** Create the DataThread object*/
+        static DataThread* createDataThread(SourceNode* sn);
+
+        /** Returns true if socket is connected */
         bool foundInputSource() override;
 
+        /** Sets info about available channels */
         void updateSettings(OwnedArray<ContinuousChannel>* continuousChannels,
             OwnedArray<EventChannel>* eventChannels,
             OwnedArray<SpikeChannel>* spikeChannels,
@@ -29,9 +40,13 @@ namespace EphysSocketNode
             OwnedArray<DeviceInfo>* devices,
             OwnedArray<ConfigurationObject>* configurationObjects);
 
-        int getNumChannels() const;
+        /** Resizes buffers when input parameters are changed*/
+        void resizeBuffers();
 
-        // User defined
+        /** Attempts to reconnect to the socket */
+        void tryToConnect();
+
+        /** Network stream parameters (must match features of incoming data) */
         int port;
         float sample_rate;
         float data_scale;
@@ -40,36 +55,36 @@ namespace EphysSocketNode
         int num_samp;
         int num_channels;
 
-        int64 total_samples;
-        float relative_sample_rate;
-
-        uint64 eventState;
-
-        void resizeChanSamp();
-        void tryToConnect();
-
-        std::unique_ptr<GenericEditor> createEditor(SourceNode* sn);
-        static DataThread* createDataThread(SourceNode* sn);
-
     private:
 
+        /** Receives data from network and pushes it to the DataBuffer */
         bool updateBuffer() override;
-        bool startAcquisition() override;
-        bool stopAcquisition()  override;
-        void timerCallback() override;
 
+        /** Resets variables and starts thread*/
+        bool startAcquisition() override;
+
+        /** Stops thread */
+        bool stopAcquisition()  override;
+
+        /** Sample index counter */
+        int64 total_samples;
+        
+        /** Local event state variable */
+        uint64 eventState;
+
+        /** True if socket is connected */
         bool connected = false;
 
-       ScopedPointer<DatagramSocket> socket;
+        /** UPD socket object */
+        std::unique_ptr<DatagramSocket> socket;
 
+        /** Internal buffers */
         uint16_t *recvbuf;
         float *convbuf;
 
         Array<int64> sampleNumbers;
         Array<double> timestamps;
         Array<uint64> ttlEventWords;
-
-        int64 currentTimestamp;
 
         JUCE_DECLARE_NON_COPYABLE_WITH_LEAK_DETECTOR(EphysSocket);
     };

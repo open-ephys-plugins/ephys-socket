@@ -137,8 +137,6 @@ void EphysSocketEditor::labelTextChanged(Label* label)
     if (label == channelCountInput)
     {
 
-        std::cout << "Label text changed" << std::endl;
-
         int num_channels = channelCountInput->getText().getIntValue();
 
         if (num_channels > 0 && num_channels < 1000)
@@ -217,7 +215,7 @@ void EphysSocketEditor::labelTextChanged(Label* label)
 
 void EphysSocketEditor::startAcquisition()
 {
-    // Disable the whole gui
+    // Disable the whole UI
     portInput->setEnabled(false);
     channelCountInput->setEnabled(false);
     sampleRateInput->setEnabled(false);
@@ -228,16 +226,16 @@ void EphysSocketEditor::startAcquisition()
     transposeButton.setEnabled(false);
 
     // Set the channels etc
-    node->data_scale = scaleInput->getText().getFloatValue();
-    node->data_offset = offsetInput->getText().getIntValue();
-    node->transpose = transposeButton.getToggleState();
+    //node->data_scale = scaleInput->getText().getFloatValue();
+   // node->data_offset = offsetInput->getText().getIntValue();
+    //node->transpose = transposeButton.getToggleState();
 
-    node->resizeChanSamp();
+    //node->resizeBuffers();
 }
 
 void EphysSocketEditor::stopAcquisition()
 {
-    // Reenable the whole gui
+    // Reenable the whole UI
     portInput->setEnabled(true);
     channelCountInput->setEnabled(true);
     sampleRateInput->setEnabled(true);
@@ -251,10 +249,12 @@ void EphysSocketEditor::stopAcquisition()
 void EphysSocketEditor::buttonClicked(Button* button)
 {
 
-    if (button == connectButton)
+    if (button == connectButton && !acquisitionIsActive)
     {
         node->port = portInput->getText().getIntValue();
         node->tryToConnect();
+
+        CoreServices::updateSignalChain(this);
     }
   
 }

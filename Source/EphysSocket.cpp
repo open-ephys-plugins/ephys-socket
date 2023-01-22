@@ -21,13 +21,11 @@ EphysSocket::EphysSocket(SourceNode* sn) : DataThread(sn),
     data_scale(DEFAULT_DATA_SCALE),
     sample_rate(DEFAULT_SAMPLE_RATE)
 {
-    socket = new DatagramSocket();
-    socket->bindToPort(port);
-    connected = (socket->waitUntilReady(true, 500) == 1); // Try to automatically open, dont worry if it does not work
     sourceBuffers.add(new DataBuffer(num_channels, 10000)); // start with 2 channels and automatically resize
     recvbuf = (uint16_t *) malloc(num_channels * num_samp * 2);
     convbuf = (float *) malloc(num_channels * num_samp * 4);
 }
+
 
 std::unique_ptr<GenericEditor> EphysSocket::createEditor(SourceNode* sn)
 {
@@ -38,14 +36,46 @@ std::unique_ptr<GenericEditor> EphysSocket::createEditor(SourceNode* sn)
 }
 
 
-
 EphysSocket::~EphysSocket()
 {
     free(recvbuf);
     free(convbuf);
 }
 
-void EphysSocket::resizeChanSamp()
+
+void  EphysSocket::tryToConnect()
+{
+
+	if (socket != nullptr)
+	{
+		socket->shutdown();
+        socket.reset();
+	}
+    
+    socket = std::make_unique<DatagramSocket>();
+    
+    bool bound = socket->bindToPort(port);
+
+    if (bound)
+    {
+        LOGC("EphysSocket bound to port ", port);
+        connected = (socket->waitUntilReady(true, 500) == 1);
+    }
+    else {
+        LOGC("EphysSocket could not bind socket to port ", port);
+    }
+
+    if (connected)
+    {
+        LOGC("EphysSocket connected.");
+
+    }
+    else {
+        LOGC("EphysSocket failed to connect");
+    }
+}
+
+void EphysSocket::resizeBuffers()
 {
     sourceBuffers[0]->resize(num_channels, 10000);
     recvbuf = (uint16_t *)realloc(recvbuf, num_channels * num_samp * 2);
@@ -54,11 +84,6 @@ void EphysSocket::resizeChanSamp()
     timestamps.clear();
     timestamps.insertMultiple(0, 0.0, num_samp);
     ttlEventWords.resize(num_samp);
-}
-
-int EphysSocket::getNumChannels() const
-{
-    return num_channels;
 }
 
 void EphysSocket::updateSettings(OwnedArray<ContinuousChannel>* continuousChannels,
@@ -79,8 +104,8 @@ void EphysSocket::updateSettings(OwnedArray<ContinuousChannel>* continuousChanne
     DataStream::Settings settings
     {
         "EphysSocketStream",
-        "description",
-        "identifier",
+        "Data acquired via network stream",
+        "ephyssocket.data",
 
         sample_rate
 
@@ -95,8 +120,8 @@ void EphysSocket::updateSettings(OwnedArray<ContinuousChannel>* continuousChanne
         ContinuousChannel::Settings settings{
             ContinuousChannel::Type::ELECTRODE,
             "CH" + String(ch + 1),
-            "description",
-            "identifier",
+            "Channel acquired via network stream",
+            "ephyssocket.continuous",
 
             data_scale,
 
@@ -109,60 +134,39 @@ void EphysSocket::updateSettings(OwnedArray<ContinuousChannel>* continuousChanne
     EventChannel::Settings eventSettings{
            EventChannel::Type::TTL,
            "Events",
-           "description",
-           "identifier",
+           "Events acquired via network stream",
+           "ephyssocket.events",
            sourceStreams->getFirst(),
            1
     };
 
     eventChannels->add(new EventChannel(eventSettings));
 
+    if (socket == nullptr)
+    {
+        tryToConnect(); // connect after settings have been loaded
+    }
+
 }
 
 bool EphysSocket::foundInputSource()
 {
+    //LOGD("Checking foundInputSource(); connected = ", connected);
     return connected;
 }
 
 bool EphysSocket::startAcquisition()
 {
-    resizeChanSamp();
+    resizeBuffers();
 
     total_samples = 0;
-
     eventState = 0;
-
-    //startTimer(5000);
 
     startThread();
 
     return true;
 }
 
-void  EphysSocket::tryToConnect()
-{
-    socket->shutdown();
-    socket = new DatagramSocket();
-    bool bound = socket->bindToPort(port);
-    if (bound)
-    {
-        std::cout << "Socket bound to port " << port << std::endl;
-        connected = (socket->waitUntilReady(true, 500) == 1);
-    }
-    else {
-        std::cout << "Could not bind socket to port " << port << std::endl;
-    }
-    
-
-    if (connected)
-    {
-        std::cout << "Socket connected." << std::endl;
-
-    }
-    else {
-        std::cout << "Socket failed to connect" << std::endl;
-    }
-}
 
 bool EphysSocket::stopAcquisition()
 {
@@ -172,8 +176,6 @@ bool EphysSocket::stopAcquisition()
     }
 
     waitForThreadToExit(500);
-
-    stopTimer();
 
     sourceBuffers[0]->clear();
     return true;
@@ -205,8 +207,6 @@ bool EphysSocket::updateBuffer()
                     eventState = 1;
                 else
                     eventState = 0;
-
-                std::cout << eventState << std::endl;
             }
                 
         }
@@ -223,11 +223,7 @@ bool EphysSocket::updateBuffer()
                     eventState = 1;
                 else
                     eventState = 0;
-
-                std::cout << eventState << std::endl;
             }
-
-
         }
     }
 
@@ -241,13 +237,4 @@ bool EphysSocket::updateBuffer()
     total_samples += num_samp;
 
     return true;
-}
-
-void EphysSocket::timerCallback()
-{
-    //std::cout << "Expected samples: " << int(sample_rate * 5) << ", Actual samples: " << total_samples << std::endl;
-    
-    relative_sample_rate = (sample_rate * 5) / float(total_samples);
-
-    //total_samples = 0;
 }
