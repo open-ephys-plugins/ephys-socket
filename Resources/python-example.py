@@ -20,8 +20,8 @@ bufferInterval = 1 / buffersPerSecond
 OpenEphysOffset = 32768
 convertedValue1 = OpenEphysOffset+(testingValue1/0.195)
 convertedValue2 = OpenEphysOffset+(testingValue2/0.195)
-intList_1 = (np.ones((int(Freq/2),)) * convertedValue1).astype('int16')
-intList_2 = (np.ones((int(Freq/2),)) * convertedValue2).astype('int16')
+intList_1 = (np.ones((int(Freq/2),)) * convertedValue1).astype('uint16')
+intList_2 = (np.ones((int(Freq/2),)) * convertedValue2).astype('uint16')
 oneCycle = np.concatenate((intList_1, intList_2))
 allData = np.tile(oneCycle, (numChannels, totalDuration)).T
 
