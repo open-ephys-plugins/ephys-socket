@@ -24,7 +24,7 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 #include <PluginInfo.h>
 #include "EphysSocket.h"
 #include <string>
-#ifdef WIN32
+#ifdef _WIN32
 #include <Windows.h>
 #define EXPORT __declspec(dllexport)
 #else
@@ -38,7 +38,7 @@ extern "C" EXPORT void getLibInfo(Plugin::LibraryInfo* info)
 {
 	info->apiVersion = PLUGIN_API_VER;
 	info->name = "Ephys Socket";
-	info->libVersion = "0.2.0";
+	info->libVersion = "0.2.1";
 	info->numPlugins = NUM_PLUGINS;
 }
 
