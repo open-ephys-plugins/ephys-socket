@@ -12,7 +12,6 @@ DataThread* EphysSocket::createDataThread(SourceNode *sn)
     return new EphysSocket(sn);
 }
 
-
 EphysSocket::EphysSocket(SourceNode* sn) : DataThread(sn),
     port(DEFAULT_PORT),
     num_channels(DEFAULT_NUM_CHANNELS),
@@ -21,31 +20,33 @@ EphysSocket::EphysSocket(SourceNode* sn) : DataThread(sn),
     data_scale(DEFAULT_DATA_SCALE),
     sample_rate(DEFAULT_SAMPLE_RATE)
 {
-    sourceBuffers.add(new DataBuffer(num_channels, 10000)); // start with 2 channels and automatically resize
-    recvbuf = (uint16_t *) malloc(num_channels * num_samp * 2);
-    convbuf = (float *) malloc(num_channels * num_samp * 4);
-}
+    total_samples = DEFAULT_TOTAL_SAMPLES;
+    eventState = DEFAULT_EVENT_STATE;
 
+    full_flag = false;
+    stop_flag = false;
+    error_flag = false;
+    buffer_flag = false;
+
+    sourceBuffers.add(new DataBuffer(num_channels, 10000)); // start with 2 channels and automatically resize
+    recvbuf0.reserve(num_channels * num_samp);
+    recvbuf1.reserve(num_channels * num_samp);
+    convbuf.reserve(num_channels * num_samp);
+}
 
 std::unique_ptr<GenericEditor> EphysSocket::createEditor(SourceNode* sn)
 {
-
     std::unique_ptr<EphysSocketEditor> editor = std::make_unique<EphysSocketEditor>(sn, this);
 
     return editor;
 }
 
-
 EphysSocket::~EphysSocket()
 {
-    free(recvbuf);
-    free(convbuf);
 }
-
 
 void  EphysSocket::tryToConnect()
 {
-
 	if (socket != nullptr)
 	{
 		socket->shutdown();
@@ -78,8 +79,9 @@ void  EphysSocket::tryToConnect()
 void EphysSocket::resizeBuffers()
 {
     sourceBuffers[0]->resize(num_channels, 10000);
-    recvbuf = (uint16_t *)realloc(recvbuf, num_channels * num_samp * 2);
-    convbuf = (float *)realloc(convbuf, num_channels * num_samp * 4);
+    recvbuf0.reserve(num_channels * num_samp);
+    recvbuf1.reserve(num_channels * num_samp);
+    convbuf.reserve(num_channels * num_samp);
     sampleNumbers.resize(num_samp);
     timestamps.clear();
     timestamps.insertMultiple(0, 0.0, num_samp);
@@ -162,11 +164,16 @@ bool EphysSocket::startAcquisition()
     total_samples = 0;
     eventState = 0;
 
+    error_flag = false;
+    stop_flag = false;
+    full_flag = false;
+    buffer_flag = false;
+
+    Thread::launch([this] {runBufferThread(); });
     startThread();
 
     return true;
 }
-
 
 bool EphysSocket::stopAcquisition()
 {
@@ -175,38 +182,88 @@ bool EphysSocket::stopAcquisition()
         signalThreadShouldExit();
     }
 
+    stop_flag = true;
+
     waitForThreadToExit(500);
 
     sourceBuffers[0]->clear();
     return true;
 }
 
+void EphysSocket::runBufferThread()
+{
+    const int header_size = sizeof(int) * 2;
+    const int total_samples = num_channels * num_samp;
+    const int total_packet_size = total_samples * sizeof(uint16_t);
+    const int packet_ratio = ((total_packet_size + header_size) / MAX_PACKET_SIZE) + 1;
+    const int packet_size = (total_packet_size / packet_ratio) + header_size;
+
+    std::vector<uint16_t> read_buffer;
+    read_buffer.resize(total_samples + 4);
+
+    int rc = 0, offset = 0, bytes_sent = 0;
+
+    while (!stop_flag)
+    {
+        rc = socket->read(read_buffer.data(), packet_size, true);
+
+        if (rc == -1)
+        {
+            CoreServices::sendStatusMessage("Ephys Socket: Data shape mismatch");
+            error_flag = true;
+            return;
+        }
+
+        offset = read_buffer.at(1) << 16 | read_buffer.at(0);
+        bytes_sent = read_buffer.at(3) << 16 | read_buffer.at(2);
+
+        if (!buffer_flag) recvbuf0.insert(recvbuf0.begin() + (offset / sizeof(uint16_t)), read_buffer.begin() + 4, read_buffer.end()); // This might error if packets are lost
+        else              recvbuf1.insert(recvbuf1.begin() + (offset / sizeof(uint16_t)), read_buffer.begin() + 4, read_buffer.end());
+        
+        if (packet_ratio == 1 || offset + bytes_sent == total_packet_size)
+        {
+            full_flag = true;
+            buffer_flag = !buffer_flag;
+        }
+    }
+
+    return;
+}
+
 bool EphysSocket::updateBuffer()
 {
-    int rc = socket->read(recvbuf, num_channels * num_samp * 2, true);
-
-    if (rc == -1)
+    if (full_flag)
     {
-        CoreServices::sendStatusMessage("Ephys Socket: Data shape mismatch");
-        return false;
-    }
-   
-    int k = 0;
-    for (int i = 0; i < num_samp; i++) {
-        for (int j = 0; j < num_channels; j++) {
-            convbuf[k++] = data_scale *  (float)(recvbuf[j*num_samp + i] - data_offset);
+        convbuf.clear();
+
+        int k = 0;
+        for (int i = 0; i < num_samp; i++) {
+            for (int j = 0; j < num_channels; j++) {
+                if (buffer_flag)
+                    convbuf.insert(convbuf.begin() + k++, data_scale * (float)(recvbuf0.at(j * num_samp + i) - data_offset));
+                else
+                    convbuf.insert(convbuf.begin() + k++, data_scale * (float)(recvbuf1.at(j * num_samp + i) - data_offset));
+            }
+            sampleNumbers.set(i, total_samples++);
+            ttlEventWords.set(i, eventState);
         }
-        sampleNumbers.set(i, total_samples++);
-        ttlEventWords.set(i, eventState);
-                
+
+        sourceBuffers[0]->addToBuffer(convbuf.data(),
+            sampleNumbers.getRawDataPointer(),
+            timestamps.getRawDataPointer(),
+            ttlEventWords.getRawDataPointer(),
+            num_samp,
+            1);
+
+        full_flag = false;
+
+        if (buffer_flag)  recvbuf0.clear();
+        else              recvbuf1.clear();
     }
 
-    sourceBuffers[0]->addToBuffer(convbuf, 
-        sampleNumbers.getRawDataPointer(),
-        timestamps.getRawDataPointer(),
-        ttlEventWords.getRawDataPointer(),
-        num_samp, 
-        1);
-
-    return true;
+    if (error_flag)
+        return false;
+    
+    else
+        return true;
 }

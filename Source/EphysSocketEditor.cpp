@@ -179,7 +179,7 @@ void EphysSocketEditor::labelTextChanged(Label* label)
     {
         int bufferSize = bufferSizeInput->getText().getIntValue();
 
-        if (bufferSize > 0 && bufferSize < 2048)
+        if (bufferSize > 0 && bufferSize <= 2048)
         {
             node->num_samp = bufferSize;
         }

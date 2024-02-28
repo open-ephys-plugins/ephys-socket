@@ -9,6 +9,9 @@ const float DEFAULT_DATA_SCALE = 0.195f;
 const uint16_t DEFAULT_DATA_OFFSET = 32768;
 const int DEFAULT_NUM_SAMPLES = 256;
 const int DEFAULT_NUM_CHANNELS = 64;
+const int DEFAULT_TOTAL_SAMPLES = 0;
+const int DEFAULT_EVENT_STATE = 0;
+const int MAX_PACKET_SIZE = 65506;
 
 namespace EphysSocketNode
 {
@@ -46,6 +49,9 @@ namespace EphysSocketNode
         /** Attempts to reconnect to the socket */
         void tryToConnect();
 
+        /** Runs the Buffer Thread to acquire data */
+        void runBufferThread();
+
         /** Network stream parameters (must match features of incoming data) */
         int port;
         float sample_rate;
@@ -79,8 +85,14 @@ namespace EphysSocketNode
         std::unique_ptr<DatagramSocket> socket;
 
         /** Internal buffers */
-        uint16_t *recvbuf;
-        float *convbuf;
+        std::vector<uint16_t> recvbuf0;
+        std::vector<uint16_t> recvbuf1;
+        std::vector<float> convbuf;
+
+        std::atomic<bool> full_flag;
+        std::atomic<bool> stop_flag;
+        std::atomic<bool> error_flag;
+        std::atomic<bool> buffer_flag;
 
         Array<int64> sampleNumbers;
         Array<double> timestamps;
