@@ -60,6 +60,7 @@ namespace EphysSocketNode
         bool transpose = true;
         int num_samp;
         int num_channels;
+        StringArray depth_strings;
 
     private:
 

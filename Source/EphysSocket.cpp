@@ -32,6 +32,8 @@ EphysSocket::EphysSocket(SourceNode* sn) : DataThread(sn),
     recvbuf0.reserve(num_channels * num_samp);
     recvbuf1.reserve(num_channels * num_samp);
     convbuf.reserve(num_channels * num_samp);
+
+    depth_strings = { "UINT8", "INT8", "UINT16", "INT16", "INT32", "FLOAT32", "FLOAT64" };
 }
 
 std::unique_ptr<GenericEditor> EphysSocket::createEditor(SourceNode* sn)

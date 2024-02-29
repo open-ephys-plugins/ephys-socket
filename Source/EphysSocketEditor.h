@@ -62,6 +62,10 @@ namespace EphysSocketNode
         ScopedPointer<Label> bufferSizeLabel;
         ScopedPointer<Label> bufferSizeInput;
 
+        // Depth
+        ScopedPointer<Label> depthLabel;
+        ScopedPointer<ComboBox> depthInput;
+
         // Fs
         ScopedPointer<Label> sampleRateLabel;
         ScopedPointer<Label> sampleRateInput;

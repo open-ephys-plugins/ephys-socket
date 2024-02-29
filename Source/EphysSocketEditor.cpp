@@ -15,14 +15,14 @@ EphysSocketEditor::EphysSocketEditor(GenericProcessor* parentNode, EphysSocket *
     // Add connect button
     connectButton = new UtilityButton("CONNECT", Font("Small Text", 12, Font::bold));
     connectButton->setRadius(3.0f);
-    connectButton->setBounds(10, 35, 70, 20);
+    connectButton->setBounds(10, 35, 65, 20);
     connectButton->addListener(this);
     addAndMakeVisible(connectButton);
 
     // Port
     portLabel = new Label("Port", "Port");
     portLabel->setFont(Font("Small Text", 10, Font::plain));
-    portLabel->setBounds(5, 60, 65, 8);
+    portLabel->setBounds(5, 63, 65, 8);
     portLabel->setColour(Label::textColourId, Colours::darkgrey);
     addAndMakeVisible(portLabel);
 
@@ -31,63 +31,76 @@ EphysSocketEditor::EphysSocketEditor(GenericProcessor* parentNode, EphysSocket *
     portInput->setColour(Label::backgroundColourId, Colours::lightgrey);
     portInput->setEditable(true);
     portInput->addListener(this);
-    portInput->setBounds(10, 70, 65, 15);
+    portInput->setBounds(10, 73, 65, 15);
     addAndMakeVisible(portInput);
 
-    //---
+    //--- BUFFER SIZE
     bufferSizeMainLabel = new Label("BUFFER SIZE", "BUFFER SIZE");
     bufferSizeMainLabel->setFont(Font("Small Text", 12, Font::plain));
-    bufferSizeMainLabel->setBounds(114, 30, 95, 15);
+    bufferSizeMainLabel->setBounds(114, 25, 95, 15);
     bufferSizeMainLabel->setColour(Label::textColourId, Colours::darkgrey);
     addAndMakeVisible(bufferSizeMainLabel);
 
     // Num chans
-    channelCountLabel = new Label("CHANNELS", "CHANNELS");
+    channelCountLabel = new Label("CHANNELS", "Channels");
     channelCountLabel->setFont(Font("Small Text", 10, Font::plain));
-    channelCountLabel->setBounds(92, 48, 65, 8);
+    channelCountLabel->setBounds(92, 40, 65, 8);
     channelCountLabel->setColour(Label::textColourId, Colours::darkgrey);
     addAndMakeVisible(channelCountLabel);
 
     channelCountInput = new Label("Channel count", String(node->num_channels));
     channelCountInput->setFont(Font("Small Text", 10, Font::plain));
-    channelCountInput->setBounds(100, 60, 50, 15);
+    channelCountInput->setBounds(97, 50, 50, 15);
     channelCountInput->setColour(Label::backgroundColourId, Colours::lightgrey);
     channelCountInput->setEditable(true);
     channelCountInput->addListener(this);
     addAndMakeVisible(channelCountInput);
 
+    // X
     xLabel = new Label("X", "X");
     xLabel->setFont(Font("Small Text", 15, Font::plain));
-    xLabel->setBounds(149, 53, 30, 30);
+    xLabel->setBounds(146, 42, 30, 30);
     xLabel->setColour(Label::textColourId, Colours::darkgrey);
     addAndMakeVisible(xLabel);
 
-
     // Num samples
-    bufferSizeLabel = new Label("SAMPLES", "SAMPLES");
+    bufferSizeLabel = new Label("SAMPLES", "Samples");
     bufferSizeLabel->setFont(Font("Small Text", 10, Font::plain));
-    bufferSizeLabel->setBounds(164, 48, 65, 8);
+    bufferSizeLabel->setBounds(158, 40, 65, 8);
     bufferSizeLabel->setColour(Label::textColourId, Colours::darkgrey);
     addAndMakeVisible(bufferSizeLabel);
 
-    bufferSizeInput = new Label ("Buffer Size", String(node->num_samp));
+    bufferSizeInput = new Label("Buffer Size", String(node->num_samp));
     bufferSizeInput->setFont(Font("Small Text", 10, Font::plain));
-    bufferSizeInput->setBounds(170, 60, 50, 15);
+    bufferSizeInput->setBounds(163, 50, 50, 15);
     bufferSizeInput->setEditable(true);
     bufferSizeInput->setColour(Label::backgroundColourId, Colours::lightgrey);
     bufferSizeInput->addListener(this);
     addAndMakeVisible(bufferSizeInput);
 
-    // Fs
-    sampleRateLabel = new Label("FREQ (HZ)", "FREQ (HZ)");
+    // Depth (Data type)
+    depthLabel = new Label("DEPTH", "Depth");
+    depthLabel->setFont(Font("Small Text", 10, Font::plain));
+    depthLabel->setBounds(105, 72, 35, 15);
+    depthLabel->setColour(Label::textColourId, Colours::darkgrey);
+    addAndMakeVisible(depthLabel);
+
+    depthInput = new ComboBox("Data Type");
+    depthInput->setBounds(140, 72, 50, 15);
+    depthInput->addItemList(node->depth_strings, 1);
+    depthInput->setSelectedId(3, true);
+    addAndMakeVisible(depthInput);
+
+    // Frequency
+    sampleRateLabel = new Label("FREQ (HZ)", "Freq (Hz)");
     sampleRateLabel->setFont(Font("Small Text", 10, Font::plain));
-    sampleRateLabel->setBounds(5, 92, 85, 8);
+    sampleRateLabel->setBounds(5, 98, 85, 8);
     sampleRateLabel->setColour(Label::textColourId, Colours::darkgrey);
     addAndMakeVisible(sampleRateLabel);
 
     sampleRateInput = new Label("Fs (Hz)", String((int) node->sample_rate));
     sampleRateInput->setFont(Font("Small Text", 10, Font::plain));
-    sampleRateInput->setBounds(10, 105, 65, 15);
+    sampleRateInput->setBounds(10, 108, 65, 15);
     sampleRateInput->setEditable(true);
     sampleRateInput->setColour(Label::backgroundColourId, Colours::lightgrey);
     sampleRateInput->addListener(this);
@@ -98,13 +111,13 @@ EphysSocketEditor::EphysSocketEditor(GenericProcessor* parentNode, EphysSocket *
     // Scale
     scaleLabel = new Label("Scale", "Scale");
     scaleLabel->setFont(Font("Small Text", 10, Font::plain));
-    scaleLabel->setBounds(85, 92, 65, 8);
+    scaleLabel->setBounds(92, 98, 85, 8);
     scaleLabel->setColour(Label::textColourId, Colours::darkgrey);
     addAndMakeVisible(scaleLabel);
 
     scaleInput = new Label("Scale", String(node->data_scale));
     scaleInput->setFont(Font("Small Text", 10, Font::plain));
-    scaleInput->setBounds(90, 105, 50, 15);
+    scaleInput->setBounds(97, 108, 50, 15);
     scaleInput->setEditable(true);
     scaleInput->setColour(Label::backgroundColourId, Colours::lightgrey);
     scaleInput->addListener(this);
@@ -113,18 +126,19 @@ EphysSocketEditor::EphysSocketEditor(GenericProcessor* parentNode, EphysSocket *
     // Offset
     offsetLabel = new Label("Offset", "Offset");
     offsetLabel->setFont(Font("Small Text", 10, Font::plain));
-    offsetLabel->setBounds(150, 92, 65, 8);
+    offsetLabel->setBounds(158, 98, 85, 8);
     offsetLabel->setColour(Label::textColourId, Colours::darkgrey);
     addAndMakeVisible(offsetLabel);
 
     offsetInput = new Label("Offset", String(node->data_offset));
     offsetInput->setFont(Font("Small Text", 10, Font::plain));
-    offsetInput->setBounds(155, 105, 50, 15);
+    offsetInput->setBounds(163, 108, 50, 15);
     offsetInput->setEditable(true);
     offsetInput->setColour(Label::backgroundColourId, Colours::lightgrey);
     offsetInput->addListener(this);
     addAndMakeVisible(offsetInput);
 
+    // Transpose Button
     transposeButton.setBounds(155, 95, 65, 20);
     transposeButton.setClickingTogglesState(true);
     transposeButton.setToggleState(true, false);
@@ -133,10 +147,8 @@ EphysSocketEditor::EphysSocketEditor(GenericProcessor* parentNode, EphysSocket *
 
 void EphysSocketEditor::labelTextChanged(Label* label)
 {
-
     if (label == channelCountInput)
     {
-
         int num_channels = channelCountInput->getText().getIntValue();
 
         if (num_channels > 0 && num_channels < 1000)
@@ -147,7 +159,6 @@ void EphysSocketEditor::labelTextChanged(Label* label)
         else {
             channelCountInput->setText(String(node->num_channels), dontSendNotification);
         }
-        
     }
     else if (label == sampleRateInput)
     {
@@ -161,7 +172,6 @@ void EphysSocketEditor::labelTextChanged(Label* label)
         else {
             sampleRateInput->setText(String(node->sample_rate), dontSendNotification);
         }
-        
     }
     else if (label == portInput)
     {
