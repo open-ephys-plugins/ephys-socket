@@ -230,17 +230,11 @@ void EphysSocketEditor::startAcquisition()
     channelCountInput->setEnabled(false);
     sampleRateInput->setEnabled(false);
     bufferSizeInput->setEnabled(false);
+    depthInput->setEnabled(false);
     scaleInput->setEnabled(false);
     offsetInput->setEnabled(false);
     connectButton->setEnabled(false);
     transposeButton.setEnabled(false);
-
-    // Set the channels etc
-    //node->data_scale = scaleInput->getText().getFloatValue();
-   // node->data_offset = offsetInput->getText().getIntValue();
-    //node->transpose = transposeButton.getToggleState();
-
-    //node->resizeBuffers();
 }
 
 void EphysSocketEditor::stopAcquisition()
@@ -250,6 +244,7 @@ void EphysSocketEditor::stopAcquisition()
     channelCountInput->setEnabled(true);
     sampleRateInput->setEnabled(true);
     bufferSizeInput->setEnabled(true);
+    depthInput->setEnabled(true);
     scaleInput->setEnabled(true);
     offsetInput->setEnabled(true);
     connectButton->setEnabled(true);
@@ -258,7 +253,6 @@ void EphysSocketEditor::stopAcquisition()
 
 void EphysSocketEditor::buttonClicked(Button* button)
 {
-
     if (button == connectButton && !acquisitionIsActive)
     {
         node->port = portInput->getText().getIntValue();
@@ -266,7 +260,6 @@ void EphysSocketEditor::buttonClicked(Button* button)
 
         CoreServices::updateSignalChain(this);
     }
-  
 }
 
 void EphysSocketEditor::saveCustomParametersToXml(XmlElement* xmlNode)
