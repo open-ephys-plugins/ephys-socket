@@ -108,8 +108,8 @@ uint16_t EphysSocket::getSizeOf() const
 void EphysSocket::resizeBuffers()
 {
     sourceBuffers[0]->resize(num_channels, 10000);
-    recvbuf0.reserve(num_channels * num_samp);
-    recvbuf1.reserve(num_channels * num_samp);
+    recvbuf0.resize(num_channels * num_samp * getSizeOf());
+    recvbuf1.resize(num_channels * num_samp * getSizeOf());
     convbuf.reserve(num_channels * num_samp);
     sampleNumbers.resize(num_samp);
     timestamps.clear();
@@ -228,7 +228,7 @@ void EphysSocket::runBufferThread()
     const int packet_size = (total_packet_size / packet_ratio) + header_size;
 
     std::vector<std::byte> read_buffer;
-    read_buffer.resize(total_samples * getSizeOf() + header_size);
+    read_buffer.resize(packet_size);
 
     int rc = 0, offset = 0, bytes_sent = 0;
 
@@ -246,9 +246,19 @@ void EphysSocket::runBufferThread()
         offset = (int)read_buffer.at(3) << 24 | (int)read_buffer.at(2) << 16 | (int)read_buffer.at(1) << 8 | (int)read_buffer.at(0);
         bytes_sent = (int)read_buffer.at(7) << 24 | (int)read_buffer.at(6) << 16 | (int)read_buffer.at(5) << 8 | (int)read_buffer.at(4);
 
-        if (!buffer_flag) recvbuf0.insert(recvbuf0.begin() + offset, read_buffer.begin() + header_size, read_buffer.end()); // This might error if packets are lost
-        else              recvbuf1.insert(recvbuf1.begin() + offset, read_buffer.begin() + header_size, read_buffer.end());
-        // TODO: Check if the offset is beyond the end of the current vector; if it is, pad with zeros
+        if (rc - header_size != bytes_sent)
+        {
+            CoreServices::sendStatusMessage("Ephys Socket: Buffer size error; different number of bytes received than expected");
+            error_flag = true;
+            return;
+        }
+
+        if (!buffer_flag) {
+            std::copy(read_buffer.begin() + header_size, read_buffer.end(), recvbuf0.begin() + offset);
+        }
+        else {
+            std::copy(read_buffer.begin() + header_size, read_buffer.end(), recvbuf1.begin() + offset);
+        }
         
         if (packet_ratio == 1 || offset + bytes_sent == total_packet_size)
         {
@@ -265,15 +275,35 @@ bool EphysSocket::updateBuffer()
     if (full_flag)
     {
         convbuf.clear();
-        uint16_t* buf;
+        uint8_t* buf_u8;
+        uint16_t* buf_u16;
         
-        if (buffer_flag) buf = (uint16_t*)recvbuf0.data();
-        else             buf = (uint16_t*)recvbuf1.data();
+        if (!buffer_flag) {
+            if (depth == "UINT8") {
+                buf_u8 = (uint8_t*)recvbuf0.data();
+            }
+            else if (depth == "UINT16") {
+                buf_u16 = (uint16_t*)recvbuf0.data();
+            }
+        }
+        else {
+            if (depth == "UINT8") {
+                buf_u8 = (uint8_t*)recvbuf1.data();
+            }
+            else if (depth == "UINT16") {
+                buf_u16 = (uint16_t*)recvbuf1.data();
+            }
+        }
 
         int k = 0;
         for (int i = 0; i < num_samp; i++) {
             for (int j = 0; j < num_channels; j++) {
-                convbuf.insert(convbuf.begin() + k++, data_scale * (float)(buf[j * num_samp + i] - data_offset));
+                if (depth == "UINT8") {
+                    convbuf.push_back(data_scale * (float)(buf_u8[j * num_samp + i] - data_offset));
+                }
+                else if (depth == "UINT16") {
+                    convbuf.push_back(data_scale * (float)(buf_u16[j * num_samp + i] - data_offset));
+                }
             }
             sampleNumbers.set(i, total_samples++);
             ttlEventWords.set(i, eventState);
@@ -287,9 +317,6 @@ bool EphysSocket::updateBuffer()
             1);
 
         full_flag = false;
-
-        if (buffer_flag)  recvbuf0.clear();
-        else              recvbuf1.clear();
     }
 
     if (error_flag)
