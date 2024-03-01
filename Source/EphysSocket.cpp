@@ -29,8 +29,8 @@ EphysSocket::EphysSocket(SourceNode* sn) : DataThread(sn),
     buffer_flag = false;
 
     sourceBuffers.add(new DataBuffer(num_channels, 10000)); // start with 2 channels and automatically resize
-    recvbuf0.reserve(num_channels * num_samp);
-    recvbuf1.reserve(num_channels * num_samp);
+    recvbuf0.reserve(num_channels * num_samp * getSizeOf());
+    recvbuf1.reserve(num_channels * num_samp * getSizeOf());
     convbuf.reserve(num_channels * num_samp);
 
     depths = { "UINT8", "INT8", "UINT16", "INT16", "INT32", "FLOAT32", "FLOAT64" };
@@ -77,6 +77,31 @@ void  EphysSocket::tryToConnect()
     }
     else {
         LOGC("EphysSocket failed to connect");
+    }
+}
+
+uint16_t EphysSocket::getSizeOf() const
+{
+    if (depth == "UINT8"){
+        return sizeof(uint8_t);
+    }
+    else if (depth == "INT8") {
+        return sizeof(int8_t);
+    }
+    else if (depth == "UINT16") {
+        return sizeof(uint16_t);
+    }
+    else if (depth == "INT16") {
+        return sizeof(int16_t);
+    }
+    else if (depth == "INT32") {
+        return sizeof(int32_t);
+    }
+    else if (depth == "FLOAT32") {
+        return sizeof(float_t);
+    }
+    else if (depth == "FLOAT64") {
+        return sizeof(double_t);
     }
 }
 
@@ -198,12 +223,12 @@ void EphysSocket::runBufferThread()
 {
     const int header_size = sizeof(int) * 2;
     const int total_samples = num_channels * num_samp;
-    const int total_packet_size = total_samples * sizeof(uint16_t);
+    const int total_packet_size = total_samples * getSizeOf();
     const int packet_ratio = ((total_packet_size + header_size) / MAX_PACKET_SIZE) + 1;
     const int packet_size = (total_packet_size / packet_ratio) + header_size;
 
-    std::vector<uint16_t> read_buffer;
-    read_buffer.resize(total_samples + 4);
+    std::vector<std::byte> read_buffer;
+    read_buffer.resize(total_samples * getSizeOf() + header_size);
 
     int rc = 0, offset = 0, bytes_sent = 0;
 
@@ -218,11 +243,11 @@ void EphysSocket::runBufferThread()
             return;
         }
 
-        offset = read_buffer.at(1) << 16 | read_buffer.at(0);
-        bytes_sent = read_buffer.at(3) << 16 | read_buffer.at(2);
+        offset = (int)read_buffer.at(3) << 24 | (int)read_buffer.at(2) << 16 | (int)read_buffer.at(1) << 8 | (int)read_buffer.at(0);
+        bytes_sent = (int)read_buffer.at(7) << 24 | (int)read_buffer.at(6) << 16 | (int)read_buffer.at(5) << 8 | (int)read_buffer.at(4);
 
-        if (!buffer_flag) recvbuf0.insert(recvbuf0.begin() + (offset / sizeof(uint16_t)), read_buffer.begin() + 4, read_buffer.end()); // This might error if packets are lost
-        else              recvbuf1.insert(recvbuf1.begin() + (offset / sizeof(uint16_t)), read_buffer.begin() + 4, read_buffer.end());
+        if (!buffer_flag) recvbuf0.insert(recvbuf0.begin() + offset, read_buffer.begin() + header_size, read_buffer.end()); // This might error if packets are lost
+        else              recvbuf1.insert(recvbuf1.begin() + offset, read_buffer.begin() + header_size, read_buffer.end());
         // TODO: Check if the offset is beyond the end of the current vector; if it is, pad with zeros
         
         if (packet_ratio == 1 || offset + bytes_sent == total_packet_size)
@@ -240,14 +265,15 @@ bool EphysSocket::updateBuffer()
     if (full_flag)
     {
         convbuf.clear();
+        uint16_t* buf;
+        
+        if (buffer_flag) buf = (uint16_t*)recvbuf0.data();
+        else             buf = (uint16_t*)recvbuf1.data();
 
         int k = 0;
         for (int i = 0; i < num_samp; i++) {
             for (int j = 0; j < num_channels; j++) {
-                if (buffer_flag)
-                    convbuf.insert(convbuf.begin() + k++, data_scale * (float)(recvbuf0.at(j * num_samp + i) - data_offset));
-                else
-                    convbuf.insert(convbuf.begin() + k++, data_scale * (float)(recvbuf1.at(j * num_samp + i) - data_offset));
+                convbuf.insert(convbuf.begin() + k++, data_scale * (float)(buf[j * num_samp + i] - data_offset));
             }
             sampleNumbers.set(i, total_samples++);
             ttlEventWords.set(i, eventState);

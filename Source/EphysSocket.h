@@ -52,6 +52,9 @@ namespace EphysSocketNode
         /** Runs the Buffer Thread to acquire data */
         void runBufferThread();
 
+        /** Returns the current data type size in bytes */
+        uint16_t getSizeOf() const;
+
         /** Network stream parameters (must match features of incoming data) */
         int port;
         float sample_rate;
@@ -90,8 +93,8 @@ namespace EphysSocketNode
         std::unique_ptr<DatagramSocket> socket;
 
         /** Internal buffers */
-        std::vector<uint16_t> recvbuf0;
-        std::vector<uint16_t> recvbuf1;
+        std::vector<std::byte> recvbuf0;
+        std::vector<std::byte> recvbuf1;
         std::vector<float> convbuf;
 
         /** Atomic booleans for handling multithreading */
