@@ -226,7 +226,7 @@ void EphysSocketEditor::labelTextChanged(Label* label)
     {
         int offset = offsetInput->getText().getIntValue();
 
-        if (offset > 0 && offset < 65536)
+        if (offset >= 0 && offset < 65536)
         {
             node->data_offset = offset;
         }
