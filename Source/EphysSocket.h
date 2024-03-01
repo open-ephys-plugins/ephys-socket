@@ -60,7 +60,11 @@ namespace EphysSocketNode
         bool transpose = true;
         int num_samp;
         int num_channels;
-        StringArray depth_strings;
+
+        /** Variables for choosing the data type */
+        StringArray depths;
+        String depth;
+        uint16_t depth_default_idx;
 
     private:
 
@@ -90,6 +94,7 @@ namespace EphysSocketNode
         std::vector<uint16_t> recvbuf1;
         std::vector<float> convbuf;
 
+        /** Atomic booleans for handling multithreading */
         std::atomic<bool> full_flag;
         std::atomic<bool> stop_flag;
         std::atomic<bool> error_flag;

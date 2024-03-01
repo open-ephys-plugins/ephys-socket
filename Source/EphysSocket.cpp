@@ -33,7 +33,9 @@ EphysSocket::EphysSocket(SourceNode* sn) : DataThread(sn),
     recvbuf1.reserve(num_channels * num_samp);
     convbuf.reserve(num_channels * num_samp);
 
-    depth_strings = { "UINT8", "INT8", "UINT16", "INT16", "INT32", "FLOAT32", "FLOAT64" };
+    depths = { "UINT8", "INT8", "UINT16", "INT16", "INT32", "FLOAT32", "FLOAT64" };
+    depth_default_idx = 3; // NB: 1-indexed value for depths, used in the Editor
+    depth = depths[depth_default_idx - 1];
 }
 
 std::unique_ptr<GenericEditor> EphysSocket::createEditor(SourceNode* sn)
@@ -221,6 +223,7 @@ void EphysSocket::runBufferThread()
 
         if (!buffer_flag) recvbuf0.insert(recvbuf0.begin() + (offset / sizeof(uint16_t)), read_buffer.begin() + 4, read_buffer.end()); // This might error if packets are lost
         else              recvbuf1.insert(recvbuf1.begin() + (offset / sizeof(uint16_t)), read_buffer.begin() + 4, read_buffer.end());
+        // TODO: Check if the offset is beyond the end of the current vector; if it is, pad with zeros
         
         if (packet_ratio == 1 || offset + bytes_sent == total_packet_size)
         {

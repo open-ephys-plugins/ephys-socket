@@ -13,6 +13,7 @@ namespace EphysSocketNode
 
     class EphysSocketEditor : public GenericEditor, 
                               public Label::Listener,
+                              public ComboBox::Listener,
                               public Button::Listener
     {
 
@@ -38,6 +39,9 @@ namespace EphysSocketNode
 
         /** Called when label is changed */
         void labelTextChanged(Label* label);
+
+        /** Called when combo box is changed */
+        void comboBoxChanged(ComboBox* comboBox);
 
     private:
 

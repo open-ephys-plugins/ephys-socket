@@ -87,8 +87,9 @@ EphysSocketEditor::EphysSocketEditor(GenericProcessor* parentNode, EphysSocket *
 
     depthInput = new ComboBox("Data Type");
     depthInput->setBounds(140, 72, 50, 15);
-    depthInput->addItemList(node->depth_strings, 1);
-    depthInput->setSelectedId(3, true);
+    depthInput->addItemList(node->depths, 1);
+    depthInput->setSelectedId(node->depth_default_idx, true);
+    depthInput->addListener(this);
     addAndMakeVisible(depthInput);
 
     // Frequency
@@ -143,6 +144,18 @@ EphysSocketEditor::EphysSocketEditor(GenericProcessor* parentNode, EphysSocket *
     transposeButton.setClickingTogglesState(true);
     transposeButton.setToggleState(true, false);
    // addAndMakeVisible(transposeButton);
+}
+
+void EphysSocketEditor::comboBoxChanged(ComboBox* comboBox)
+{
+    if (comboBox == depthInput) {
+        if (depthInput->getSelectedId() != 0) {
+            node->depth = depthInput->getText();
+        }
+        else {
+            node->depth = depthInput->getItemText(node->depth_default_idx);
+        }
+    }
 }
 
 void EphysSocketEditor::labelTextChanged(Label* label)
