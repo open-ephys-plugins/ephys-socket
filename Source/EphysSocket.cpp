@@ -12,16 +12,20 @@ DataThread* EphysSocket::createDataThread(SourceNode *sn)
     return new EphysSocket(sn);
 }
 
-EphysSocket::EphysSocket(SourceNode* sn) : DataThread(sn),
-    port(DEFAULT_PORT),
-    num_channels(DEFAULT_NUM_CHANNELS),
-    num_samp(DEFAULT_NUM_SAMPLES),
-    data_offset(DEFAULT_DATA_OFFSET),
-    data_scale(DEFAULT_DATA_SCALE),
-    sample_rate(DEFAULT_SAMPLE_RATE)
+EphysSocket::EphysSocket(SourceNode* sn) : DataThread(sn)
 {
+    port = DEFAULT_PORT;
+    num_channels = DEFAULT_NUM_CHANNELS;
+    num_samp = DEFAULT_NUM_SAMPLES;
+    data_offset = DEFAULT_DATA_OFFSET;
+    data_scale = DEFAULT_DATA_SCALE;
+    sample_rate = DEFAULT_SAMPLE_RATE;
     total_samples = DEFAULT_TOTAL_SAMPLES;
     eventState = DEFAULT_EVENT_STATE;
+
+    depth = U16;
+    element_size = 2;
+    num_bytes = 32678;
 
     full_flag = false;
     stop_flag = false;
@@ -29,13 +33,6 @@ EphysSocket::EphysSocket(SourceNode* sn) : DataThread(sn),
     buffer_flag = false;
 
     sourceBuffers.add(new DataBuffer(num_channels, 10000)); // start with 2 channels and automatically resize
-    recvbuf0.reserve(num_channels * num_samp * getSizeOf());
-    recvbuf1.reserve(num_channels * num_samp * getSizeOf());
-    convbuf.reserve(num_channels * num_samp);
-
-    depths = { "UINT8", "INT8", "UINT16", "INT16", "INT32", "FLOAT32", "FLOAT64" };
-    depth_default_idx = 3; // NB: 1-indexed value for depths, used in the Editor
-    depth = depths[depth_default_idx - 1];
 }
 
 std::unique_ptr<GenericEditor> EphysSocket::createEditor(SourceNode* sn)
@@ -49,7 +46,12 @@ EphysSocket::~EphysSocket()
 {
 }
 
-void  EphysSocket::tryToConnect()
+Header EphysSocket::parseHeader(std::vector<std::byte> header_bytes)
+{
+    return Header(header_bytes);
+}
+
+void EphysSocket::tryToConnect()
 {
 	if (socket != nullptr)
 	{
@@ -74,43 +76,29 @@ void  EphysSocket::tryToConnect()
     {
         LOGC("EphysSocket connected.");
 
+        std::vector<std::byte> header_bytes(HEADER_SIZE);
+
+        int rc = socket->read(header_bytes.data(), HEADER_SIZE, true);
+
+        Header tmp_header = parseHeader(header_bytes);
+
+        num_bytes = tmp_header.num_bytes;
+        depth = tmp_header.depth;
+        element_size = tmp_header.element_size;
+        num_samp = tmp_header.num_samp;
+        num_channels = tmp_header.num_channels;
     }
     else {
         LOGC("EphysSocket failed to connect");
     }
 }
 
-uint16_t EphysSocket::getSizeOf() const
-{
-    if (depth == "UINT8"){
-        return sizeof(uint8_t);
-    }
-    else if (depth == "INT8") {
-        return sizeof(int8_t);
-    }
-    else if (depth == "UINT16") {
-        return sizeof(uint16_t);
-    }
-    else if (depth == "INT16") {
-        return sizeof(int16_t);
-    }
-    else if (depth == "INT32") {
-        return sizeof(int32_t);
-    }
-    else if (depth == "FLOAT32") {
-        return sizeof(float_t);
-    }
-    else if (depth == "FLOAT64") {
-        return sizeof(double_t);
-    }
-}
-
 void EphysSocket::resizeBuffers()
 {
     sourceBuffers[0]->resize(num_channels, 10000);
-    recvbuf0.resize(num_channels * num_samp * getSizeOf());
-    recvbuf1.resize(num_channels * num_samp * getSizeOf());
-    convbuf.reserve(num_channels * num_samp);
+    recvbuf0.resize(num_channels * num_samp * element_size);
+    recvbuf1.resize(num_channels * num_samp * element_size);
+    convbuf.resize(num_channels * num_samp);
     sampleNumbers.resize(num_samp);
     timestamps.clear();
     timestamps.insertMultiple(0, 0.0, num_samp);
@@ -172,12 +160,6 @@ void EphysSocket::updateSettings(OwnedArray<ContinuousChannel>* continuousChanne
     };
 
     eventChannels->add(new EventChannel(eventSettings));
-
-    if (socket == nullptr)
-    {
-        tryToConnect(); // connect after settings have been loaded
-    }
-
 }
 
 bool EphysSocket::foundInputSource()
@@ -219,18 +201,57 @@ bool EphysSocket::stopAcquisition()
     return true;
 }
 
+bool EphysSocket::compareHeaders(Header header) const
+{
+    if (header.num_bytes != num_bytes ||
+        header.depth != depth ||
+        header.element_size != element_size ||
+        header.num_channels != num_channels ||
+        header.num_samp != num_samp)
+    {
+        return false;
+    }
+
+    return true;
+}
+
+bool EphysSocket::compareHeaders(std::vector<std::byte>& header_bytes) const
+{
+    Header header = Header(header_bytes);
+    return compareHeaders(header);
+}
+
+template <typename T>
+void EphysSocket::convertData()
+{
+    T* buf;
+
+    if (!buffer_flag) {
+        buf = (T*)recvbuf0.data();
+    }
+    else {
+        buf = (T*)recvbuf1.data();
+    }
+
+    int k = 0;
+    for (int i = 0; i < num_samp; i++) {
+        for (int j = 0; j < num_channels; j++) {
+            convbuf[k++] = data_scale * (float)(buf[j * num_samp + i]) - data_offset;
+        }
+    }
+}
+
 void EphysSocket::runBufferThread()
 {
-    const int header_size = sizeof(int) * 2;
-    const int total_samples = num_channels * num_samp;
-    const int total_packet_size = total_samples * getSizeOf();
-    const int packet_ratio = ((total_packet_size + header_size) / MAX_PACKET_SIZE) + 1;
-    const int packet_size = (total_packet_size / packet_ratio) + header_size;
+    const int matrix_size = num_channels * num_samp * element_size;
+    const int packet_ratio = ((matrix_size + HEADER_SIZE) / MAX_PACKET_SIZE) + 1;
+    const int packet_size = (matrix_size / packet_ratio) + HEADER_SIZE;
 
     std::vector<std::byte> read_buffer;
     read_buffer.resize(packet_size);
 
-    int rc = 0, offset = 0, bytes_sent = 0;
+    int rc;
+    Header header;
 
     while (!stop_flag)
     {
@@ -243,25 +264,46 @@ void EphysSocket::runBufferThread()
             return;
         }
 
-        offset = (int)read_buffer.at(3) << 24 | (int)read_buffer.at(2) << 16 | (int)read_buffer.at(1) << 8 | (int)read_buffer.at(0);
-        bytes_sent = (int)read_buffer.at(7) << 24 | (int)read_buffer.at(6) << 16 | (int)read_buffer.at(5) << 8 | (int)read_buffer.at(4);
+        header = Header(read_buffer);
 
-        if (rc - header_size != bytes_sent)
+        if (!compareHeaders(header))
         {
-            CoreServices::sendStatusMessage("Ephys Socket: Buffer size error; different number of bytes received than expected");
+            CoreServices::sendStatusMessage("Ephys Socket: Header mismatch");
             error_flag = true;
             return;
         }
 
         if (!buffer_flag) {
-            std::copy(read_buffer.begin() + header_size, read_buffer.end(), recvbuf0.begin() + offset);
+            std::copy(read_buffer.begin() + HEADER_SIZE, read_buffer.end(), recvbuf0.begin() + header.offset);
         }
         else {
-            std::copy(read_buffer.begin() + header_size, read_buffer.end(), recvbuf1.begin() + offset);
+            std::copy(read_buffer.begin() + HEADER_SIZE, read_buffer.end(), recvbuf1.begin() + header.offset);
         }
         
-        if (packet_ratio == 1 || offset + bytes_sent == total_packet_size)
+        if (packet_ratio == 1 || header.offset + header.num_bytes == matrix_size)
         {
+            if (depth == U8) {
+                convertData<uint8_t>();
+            }
+            else if (depth == S8) {
+                convertData<int8_t>();
+            }
+            else if (depth == U16) {
+                convertData<uint16_t>();
+            }
+            else if (depth == S16) {
+                convertData<int16_t>();
+            }
+            else if (depth == S32) {
+                convertData<int32_t>();
+            }
+            else if (depth == F32) {
+                convertData<float_t>();
+            }
+            else if (depth == F64) {
+                convertData<double_t>();
+            }
+
             full_flag = true;
             buffer_flag = !buffer_flag;
         }
@@ -274,37 +316,7 @@ bool EphysSocket::updateBuffer()
 {
     if (full_flag)
     {
-        convbuf.clear();
-        uint8_t* buf_u8;
-        uint16_t* buf_u16;
-        
-        if (!buffer_flag) {
-            if (depth == "UINT8") {
-                buf_u8 = (uint8_t*)recvbuf0.data();
-            }
-            else if (depth == "UINT16") {
-                buf_u16 = (uint16_t*)recvbuf0.data();
-            }
-        }
-        else {
-            if (depth == "UINT8") {
-                buf_u8 = (uint8_t*)recvbuf1.data();
-            }
-            else if (depth == "UINT16") {
-                buf_u16 = (uint16_t*)recvbuf1.data();
-            }
-        }
-
-        int k = 0;
         for (int i = 0; i < num_samp; i++) {
-            for (int j = 0; j < num_channels; j++) {
-                if (depth == "UINT8") {
-                    convbuf.push_back(data_scale * (float)(buf_u8[j * num_samp + i] - data_offset));
-                }
-                else if (depth == "UINT16") {
-                    convbuf.push_back(data_scale * (float)(buf_u16[j * num_samp + i] - data_offset));
-                }
-            }
             sampleNumbers.set(i, total_samples++);
             ttlEventWords.set(i, eventState);
         }
