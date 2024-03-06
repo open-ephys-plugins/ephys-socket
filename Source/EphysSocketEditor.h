@@ -7,13 +7,14 @@
 
 #include <VisualizerEditorHeaders.h>
 
+#include "Header.h"
+
 namespace EphysSocketNode
 {
     class EphysSocket;
 
     class EphysSocketEditor : public GenericEditor, 
                               public Label::Listener,
-                              public ComboBox::Listener,
                               public Button::Listener
     {
 
@@ -40,8 +41,8 @@ namespace EphysSocketNode
         /** Called when label is changed */
         void labelTextChanged(Label* label);
 
-        /** Called when combo box is changed */
-        void comboBoxChanged(ComboBox* comboBox);
+        /** Updates variables that have been sent as headers */
+        void updateLabels(int chan, int samp, Depth depth);
 
     private:
 
@@ -68,7 +69,7 @@ namespace EphysSocketNode
 
         // Depth
         ScopedPointer<Label> depthLabel;
-        ScopedPointer<ComboBox> depthInput;
+        ScopedPointer<Label> depthInput;
 
         // Fs
         ScopedPointer<Label> sampleRateLabel;

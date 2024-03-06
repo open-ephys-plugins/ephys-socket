@@ -52,8 +52,6 @@ EphysSocketEditor::EphysSocketEditor(GenericProcessor* parentNode, EphysSocket *
     channelCountInput->setFont(Font("Small Text", 10, Font::plain));
     channelCountInput->setBounds(97, 50, 50, 15);
     channelCountInput->setColour(Label::backgroundColourId, Colours::lightgrey);
-    channelCountInput->setEditable(true);
-    channelCountInput->addListener(this);
     addAndMakeVisible(channelCountInput);
 
     // X
@@ -73,9 +71,7 @@ EphysSocketEditor::EphysSocketEditor(GenericProcessor* parentNode, EphysSocket *
     bufferSizeInput = new Label("Buffer Size", String(node->num_samp));
     bufferSizeInput->setFont(Font("Small Text", 10, Font::plain));
     bufferSizeInput->setBounds(163, 50, 50, 15);
-    bufferSizeInput->setEditable(true);
     bufferSizeInput->setColour(Label::backgroundColourId, Colours::lightgrey);
-    bufferSizeInput->addListener(this);
     addAndMakeVisible(bufferSizeInput);
 
     // Depth (Data type)
@@ -85,11 +81,10 @@ EphysSocketEditor::EphysSocketEditor(GenericProcessor* parentNode, EphysSocket *
     depthLabel->setColour(Label::textColourId, Colours::darkgrey);
     addAndMakeVisible(depthLabel);
 
-    depthInput = new ComboBox("Data Type");
+    depthInput = new Label("Data Type", "U16");
+    depthInput->setFont(Font("Small Text", 10, Font::plain));
     depthInput->setBounds(140, 72, 50, 15);
-    depthInput->addItemList(node->depths, 1);
-    depthInput->setSelectedId(node->depth_default_idx, true);
-    depthInput->addListener(this);
+    depthInput->setColour(Label::backgroundColourId, Colours::lightgrey);
     addAndMakeVisible(depthInput);
 
     // Frequency
@@ -146,34 +141,16 @@ EphysSocketEditor::EphysSocketEditor(GenericProcessor* parentNode, EphysSocket *
    // addAndMakeVisible(transposeButton);
 }
 
-void EphysSocketEditor::comboBoxChanged(ComboBox* comboBox)
+void EphysSocketEditor::updateLabels(int chan, int samp, Depth depth)
 {
-    if (comboBox == depthInput) {
-        if (depthInput->getSelectedId() != 0) {
-            node->depth = depthInput->getText();
-        }
-        else {
-            node->depth = depthInput->getItemText(node->depth_default_idx);
-        }
-    }
+    channelCountInput->setText(String(chan), dontSendNotification);
+    bufferSizeInput->setText(String(samp), dontSendNotification);
+    depthInput->setText(String(depth), dontSendNotification);
 }
 
 void EphysSocketEditor::labelTextChanged(Label* label)
 {
-    if (label == channelCountInput)
-    {
-        int num_channels = channelCountInput->getText().getIntValue();
-
-        if (num_channels > 0 && num_channels < 1000)
-        {
-            node->num_channels = num_channels;
-            CoreServices::updateSignalChain(this);
-        }
-        else {
-            channelCountInput->setText(String(node->num_channels), dontSendNotification);
-        }
-    }
-    else if (label == sampleRateInput)
+    if (label == sampleRateInput)
     {
         float sampleRate = sampleRateInput->getText().getFloatValue();
 
@@ -196,18 +173,6 @@ void EphysSocketEditor::labelTextChanged(Label* label)
         }
         else {
             portInput->setText(String(node->port), dontSendNotification);
-        }
-    }
-    else if (label == bufferSizeInput)
-    {
-        int bufferSize = bufferSizeInput->getText().getIntValue();
-
-        if (bufferSize > 0 && bufferSize <= 2048)
-        {
-            node->num_samp = bufferSize;
-        }
-        else {
-            bufferSizeInput->setText(String(node->num_samp), dontSendNotification);
         }
     }
     else if (label == scaleInput)
@@ -247,7 +212,7 @@ void EphysSocketEditor::startAcquisition()
     scaleInput->setEnabled(false);
     offsetInput->setEnabled(false);
     connectButton->setEnabled(false);
-    transposeButton.setEnabled(false);
+    //transposeButton.setEnabled(false);
 }
 
 void EphysSocketEditor::stopAcquisition()
@@ -261,7 +226,7 @@ void EphysSocketEditor::stopAcquisition()
     scaleInput->setEnabled(true);
     offsetInput->setEnabled(true);
     connectButton->setEnabled(true);
-    transposeButton.setEnabled(true);
+    //transposeButton.setEnabled(true);
 }
 
 void EphysSocketEditor::buttonClicked(Button* button)
@@ -270,6 +235,8 @@ void EphysSocketEditor::buttonClicked(Button* button)
     {
         node->port = portInput->getText().getIntValue();
         node->tryToConnect();
+
+        updateLabels(node->num_channels, node->num_samp, node->depth);
 
         CoreServices::updateSignalChain(this);
     }
@@ -294,22 +261,22 @@ void EphysSocketEditor::loadCustomParametersFromXml(XmlElement* xmlNode)
         if (subNode->hasTagName("PARAMETERS"))
         {
             portInput->setText(subNode->getStringAttribute("port", ""), dontSendNotification);
-            node->port = subNode->getIntAttribute("port", DEFAULT_PORT);
+            node->port = subNode->getIntAttribute("port", 9001);
 
             channelCountInput->setText(subNode->getStringAttribute("numchan", ""), dontSendNotification);
-            node->num_channels = subNode->getIntAttribute("numchan", DEFAULT_NUM_CHANNELS);
+            node->num_channels = subNode->getIntAttribute("numchan", 64);
 
             bufferSizeInput->setText(subNode->getStringAttribute("numsamp", ""), dontSendNotification);
-            node->num_samp = subNode->getIntAttribute("numsamp", DEFAULT_NUM_SAMPLES);
+            node->num_samp = subNode->getIntAttribute("numsamp", 256);
 
             sampleRateInput->setText(subNode->getStringAttribute("fs", ""), dontSendNotification);
-            node->sample_rate = subNode->getDoubleAttribute("fs", DEFAULT_SAMPLE_RATE);
+            node->sample_rate = subNode->getDoubleAttribute("fs", 30000.0f);
 
             scaleInput->setText(subNode->getStringAttribute("scale", ""), dontSendNotification);
-            node->data_scale = subNode->getDoubleAttribute("scale", DEFAULT_DATA_SCALE);
+            node->data_scale = subNode->getDoubleAttribute("scale", 0.195f);
 
             offsetInput->setText(subNode->getStringAttribute("offset", ""), dontSendNotification);
-            node->data_offset = subNode->getIntAttribute("offset", DEFAULT_DATA_OFFSET);
+            node->data_offset = subNode->getIntAttribute("offset", 32768);
         }
     }
 }
