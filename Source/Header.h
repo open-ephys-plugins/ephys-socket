@@ -1,7 +1,7 @@
 #ifndef __EPHYSHEADERH__
 #define __EPHYSHEADERH__
 
-#include <VisualizerEditorHeaders.h>
+#include <DataThreadHeaders.h>
 
 namespace EphysSocketNode
 {
@@ -14,6 +14,8 @@ namespace EphysSocketNode
 		Header();
 
 		Header(std::vector<std::byte>& header_bytes);
+
+		Header(std::vector<std::byte>& header_bytes, int offset);
 
 		int offset;
 		int num_bytes;
