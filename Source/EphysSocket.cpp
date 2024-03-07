@@ -351,3 +351,72 @@ bool EphysSocket::updateBuffer()
     else
         return true;
 }
+
+String EphysSocket::handleConfigMessage(String msg)
+{
+    // Available commands:
+    // ES INFO - Returns info on current variables that can be modified over HTTP
+    // ES SCALE <data_scale> - Updates the data scale to data_scale
+    // ES OFFSET <data_offset> - Updates the offset to data_offset
+
+    if (CoreServices::getAcquisitionStatus()) {
+        return "Ephys Socket plugin cannot update settings while acquisition is active.";
+    }
+
+    StringArray parts = StringArray::fromTokens(msg, " ", "");
+
+    if (parts.size() > 0)
+    {
+        if (parts[0].equalsIgnoreCase("ES"))
+        {
+            if (parts.size() == 3)
+            {
+                if (parts[1].equalsIgnoreCase("SCALE"))
+                {
+                    float scale = parts[2].getFloatValue();
+
+                    if (scale > MIN_DATA_SCALE && scale < MAX_DATA_SCALE)
+                    {
+                        data_scale = scale;
+                        LOGD("Scale updated to: ", scale);
+                        return "SUCCESS";
+                    }
+
+                    return "Invalid scale requested. Scale can be set between '" + String(MIN_DATA_SCALE) + "' and '" + String(MAX_DATA_SCALE) + "'";
+                }
+                else if (parts[1].equalsIgnoreCase("OFFSET"))
+                {
+                    float offset = parts[2].getFloatValue();
+
+                    if (offset >= MIN_DATA_OFFSET && offset < MAX_DATA_OFFSET)
+                    {
+                        data_offset = offset;
+                        LOGD("Offset updated to: ", offset);
+                        return "SUCCESS";
+                    }
+
+                    return "Invalid offset requested. Offset can be set between '" + String(MIN_DATA_OFFSET) + "' and '" + String(MIN_DATA_OFFSET) + "'";
+                }
+                else
+                {
+                    return "ES command " + parts[1] + "not recognized.";
+                }
+            }
+            else if (parts.size() == 2)
+            {
+                if (parts[1].equalsIgnoreCase("INFO"))
+                {
+                    return "Scale = " + String(data_scale) + ". Offset = " + String(data_offset) + ".";
+                }
+                else
+                {
+                    return "ES command " + parts[1] + "not recognized.";
+                }
+            }
+
+            return "Unknown number of inputs given.";
+        }
+
+        return "Command not recognized.";
+    }
+}

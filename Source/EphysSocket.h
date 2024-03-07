@@ -13,6 +13,22 @@ namespace EphysSocketNode
 
     public:
 
+        /** Default parameters */
+        const int DEFAULT_PORT = 9001;
+        const float DEFAULT_SAMPLE_RATE = 30000.0f;
+        const float DEFAULT_DATA_SCALE = 0.195f;
+        const uint16_t DEFAULT_DATA_OFFSET = 32768;
+        const int DEFAULT_NUM_SAMPLES = 256;
+        const int DEFAULT_NUM_CHANNELS = 64;
+        const int DEFAULT_TOTAL_SAMPLES = 0;
+        const int DEFAULT_EVENT_STATE = 0;
+
+        /** Parameter limits */
+        const float MIN_DATA_SCALE = 0.0f;
+        const float MAX_DATA_SCALE = 9999.9f;
+        const float MIN_DATA_OFFSET = 0;
+        const float MAX_DATA_OFFSET = 65536;
+
         /** Constructor */
         EphysSocket(SourceNode* sn);
         
@@ -59,15 +75,7 @@ namespace EphysSocketNode
 
     private:
 
-        /** Constant parameters and enumeration definitions */
-        const int DEFAULT_PORT = 9001;
-        const float DEFAULT_SAMPLE_RATE = 30000.0f;
-        const float DEFAULT_DATA_SCALE = 0.195f;
-        const uint16_t DEFAULT_DATA_OFFSET = 32768;
-        const int DEFAULT_NUM_SAMPLES = 256;
-        const int DEFAULT_NUM_CHANNELS = 64;
-        const int DEFAULT_TOTAL_SAMPLES = 0;
-        const int DEFAULT_EVENT_STATE = 0;
+        /** Socket parameters */
         const int MAX_PACKET_SIZE = 65506;
         const int HEADER_SIZE = 22;
 
@@ -83,6 +91,9 @@ namespace EphysSocketNode
 
         /** Stops thread */
         bool stopAcquisition()  override;
+
+        /** Handles incoming HTTP messages */
+        String handleConfigMessage(String msg) override;
 
         /** Compares a newly parsed header to existing variables */
         bool compareHeaders(Header header) const;
