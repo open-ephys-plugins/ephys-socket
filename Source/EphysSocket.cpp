@@ -203,8 +203,7 @@ bool EphysSocket::stopAcquisition()
 
 bool EphysSocket::compareHeaders(Header header) const
 {
-    if (header.num_bytes != num_bytes ||
-        header.depth != depth ||
+    if (header.depth != depth ||
         header.element_size != element_size ||
         header.num_channels != num_channels ||
         header.num_samp != num_samp)
@@ -244,18 +243,24 @@ void EphysSocket::convertData()
 void EphysSocket::runBufferThread()
 {
     const int matrix_size = num_channels * num_samp * element_size;
-    const int packet_ratio = ((matrix_size + HEADER_SIZE) / MAX_PACKET_SIZE) + 1;
-    const int packet_size = (matrix_size / packet_ratio) + HEADER_SIZE;
+    const int num_expected_packets = (matrix_size / MAX_PACKET_SIZE) + 1;
+    const int max_data_size = num_expected_packets == 1 ? matrix_size : MAX_PACKET_SIZE - HEADER_SIZE;
 
     std::vector<std::byte> read_buffer;
-    read_buffer.resize(packet_size);
+    read_buffer.resize(matrix_size + HEADER_SIZE * num_expected_packets);
 
     int rc;
     Header header;
 
+    // NB: If mutliple packets are needed for the matrix, they can be misaligned by
+    // reading the header in tryToConnect(); two consecutive reads realigns the
+    // packets and allows correct reconstruction of the whole matrix  
+    rc = socket->read(read_buffer.data(), HEADER_SIZE, true);
+    rc = socket->read(read_buffer.data(), HEADER_SIZE, true);
+
     while (!stop_flag)
     {
-        rc = socket->read(read_buffer.data(), packet_size, true);
+        rc = socket->read(read_buffer.data(), matrix_size + HEADER_SIZE * num_expected_packets, true);
 
         if (rc == -1)
         {
@@ -264,49 +269,58 @@ void EphysSocket::runBufferThread()
             return;
         }
 
-        header = Header(read_buffer);
-
-        if (!compareHeaders(header))
+        for (int i = 0; i < num_expected_packets; i++)
         {
-            CoreServices::sendStatusMessage("Ephys Socket: Header mismatch");
-            error_flag = true;
-            return;
-        }
+            header = Header(read_buffer, i * (max_data_size + HEADER_SIZE));
 
-        if (!buffer_flag) {
-            std::copy(read_buffer.begin() + HEADER_SIZE, read_buffer.end(), recvbuf0.begin() + header.offset);
-        }
-        else {
-            std::copy(read_buffer.begin() + HEADER_SIZE, read_buffer.end(), recvbuf1.begin() + header.offset);
+            if (!compareHeaders(header))
+            {
+                CoreServices::sendStatusMessage("Ephys Socket: Header mismatch");
+                error_flag = true;
+                return;
+            }
+
+            if (i == 0 && header.offset != 0)
+            {
+                CoreServices::sendStatusMessage("Ephys Socket: Packets were dropped");
+                error_flag = true;
+                return;
+            }
+
+            int current_offset = HEADER_SIZE * (i + 1) + header.offset;
+
+            if (!buffer_flag) {
+                std::copy(read_buffer.begin() + current_offset, read_buffer.begin() + current_offset + header.num_bytes, recvbuf0.begin() + header.offset);
+            }
+            else {
+                std::copy(read_buffer.begin() + current_offset, read_buffer.begin() + current_offset + header.num_bytes, recvbuf1.begin() + header.offset);
+            }
         }
         
-        if (packet_ratio == 1 || header.offset + header.num_bytes == matrix_size)
-        {
-            if (depth == U8) {
-                convertData<uint8_t>();
-            }
-            else if (depth == S8) {
-                convertData<int8_t>();
-            }
-            else if (depth == U16) {
-                convertData<uint16_t>();
-            }
-            else if (depth == S16) {
-                convertData<int16_t>();
-            }
-            else if (depth == S32) {
-                convertData<int32_t>();
-            }
-            else if (depth == F32) {
-                convertData<float_t>();
-            }
-            else if (depth == F64) {
-                convertData<double_t>();
-            }
-
-            full_flag = true;
-            buffer_flag = !buffer_flag;
+        if (depth == U8) {
+            convertData<uint8_t>();
         }
+        else if (depth == S8) {
+            convertData<int8_t>();
+        }
+        else if (depth == U16) {
+            convertData<uint16_t>();
+        }
+        else if (depth == S16) {
+            convertData<int16_t>();
+        }
+        else if (depth == S32) {
+            convertData<int32_t>();
+        }
+        else if (depth == F32) {
+            convertData<float_t>();
+        }
+        else if (depth == F64) {
+            convertData<double_t>();
+        }
+
+        full_flag = true;
+        buffer_flag = !buffer_flag;
     }
 
     return;
