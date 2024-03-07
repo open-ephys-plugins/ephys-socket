@@ -81,7 +81,7 @@ EphysSocketEditor::EphysSocketEditor(GenericProcessor* parentNode, EphysSocket *
     depthLabel->setColour(Label::textColourId, Colours::darkgrey);
     addAndMakeVisible(depthLabel);
 
-    depthInput = new Label("Data Type", "U16");
+    depthInput = new Label("Data Type", "2");
     depthInput->setFont(Font("Small Text", 10, Font::plain));
     depthInput->setBounds(140, 72, 50, 15);
     depthInput->setColour(Label::backgroundColourId, Colours::lightgrey);
@@ -141,11 +141,13 @@ EphysSocketEditor::EphysSocketEditor(GenericProcessor* parentNode, EphysSocket *
    // addAndMakeVisible(transposeButton);
 }
 
-void EphysSocketEditor::updateLabels(int chan, int samp, Depth depth)
+void EphysSocketEditor::updateLabels()
 {
-    channelCountInput->setText(String(chan), dontSendNotification);
-    bufferSizeInput->setText(String(samp), dontSendNotification);
-    depthInput->setText(String(depth), dontSendNotification);
+    channelCountInput->setText(String(node->num_channels), dontSendNotification);
+    bufferSizeInput->setText(String(node->num_samp), dontSendNotification);
+    depthInput->setText(String(node->depth), dontSendNotification);
+    scaleInput->setText(String(node->data_scale), dontSendNotification);
+    offsetInput->setText(String(node->data_offset), dontSendNotification);
 }
 
 void EphysSocketEditor::labelTextChanged(Label* label)
@@ -179,7 +181,7 @@ void EphysSocketEditor::labelTextChanged(Label* label)
     {
         float scale = scaleInput->getText().getFloatValue();
 
-        if (scale > 0.0f && scale < 9999.9f)
+        if (scale > node->MIN_DATA_SCALE && scale < node->MAX_DATA_SCALE)
         {
             node->data_scale = scale;
         }
@@ -191,7 +193,7 @@ void EphysSocketEditor::labelTextChanged(Label* label)
     {
         int offset = offsetInput->getText().getIntValue();
 
-        if (offset >= 0 && offset < 65536)
+        if (offset >= node->MIN_DATA_OFFSET && offset < node->MAX_DATA_OFFSET)
         {
             node->data_offset = offset;
         }
@@ -236,7 +238,7 @@ void EphysSocketEditor::buttonClicked(Button* button)
         node->port = portInput->getText().getIntValue();
         node->tryToConnect();
 
-        updateLabels(node->num_channels, node->num_samp, node->depth);
+        updateLabels();
 
         CoreServices::updateSignalChain(this);
     }
@@ -261,22 +263,22 @@ void EphysSocketEditor::loadCustomParametersFromXml(XmlElement* xmlNode)
         if (subNode->hasTagName("PARAMETERS"))
         {
             portInput->setText(subNode->getStringAttribute("port", ""), dontSendNotification);
-            node->port = subNode->getIntAttribute("port", 9001);
+            node->port = subNode->getIntAttribute("port", node->DEFAULT_PORT);
 
             channelCountInput->setText(subNode->getStringAttribute("numchan", ""), dontSendNotification);
-            node->num_channels = subNode->getIntAttribute("numchan", 64);
+            node->num_channels = subNode->getIntAttribute("numchan", node->DEFAULT_NUM_CHANNELS);
 
             bufferSizeInput->setText(subNode->getStringAttribute("numsamp", ""), dontSendNotification);
-            node->num_samp = subNode->getIntAttribute("numsamp", 256);
+            node->num_samp = subNode->getIntAttribute("numsamp", node->DEFAULT_NUM_SAMPLES);
 
             sampleRateInput->setText(subNode->getStringAttribute("fs", ""), dontSendNotification);
-            node->sample_rate = subNode->getDoubleAttribute("fs", 30000.0f);
+            node->sample_rate = subNode->getDoubleAttribute("fs", node->DEFAULT_SAMPLE_RATE);
 
             scaleInput->setText(subNode->getStringAttribute("scale", ""), dontSendNotification);
-            node->data_scale = subNode->getDoubleAttribute("scale", 0.195f);
+            node->data_scale = subNode->getDoubleAttribute("scale", node->DEFAULT_DATA_SCALE);
 
             offsetInput->setText(subNode->getStringAttribute("offset", ""), dontSendNotification);
-            node->data_offset = subNode->getIntAttribute("offset", 32768);
+            node->data_offset = subNode->getIntAttribute("offset", node->DEFAULT_DATA_OFFSET);
         }
     }
 }

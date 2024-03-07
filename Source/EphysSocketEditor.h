@@ -42,7 +42,7 @@ namespace EphysSocketNode
         void labelTextChanged(Label* label);
 
         /** Updates variables that have been sent as headers */
-        void updateLabels(int chan, int samp, Depth depth);
+        void updateLabels();
 
     private:
 
