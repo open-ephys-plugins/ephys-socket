@@ -264,6 +264,12 @@ void EphysSocket::runBufferThread()
 
         if (rc == -1)
         {
+            if (socket->getRawSocketHandle() == -1)
+            {
+                CoreServices::sendStatusMessage("Ephys Socket: Socket handle is no longer valid.");
+                return;
+            }
+
             CoreServices::sendStatusMessage("Ephys Socket: Data shape mismatch");
             error_flag = true;
             return;
