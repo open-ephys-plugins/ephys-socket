@@ -41,6 +41,9 @@ namespace EphysSocketNode
         /** Called when label is changed */
         void labelTextChanged(Label* label);
 
+        /** Converts Depth enum to string for readability */
+        String depthString();
+
         /** Updates variables that have been sent as headers */
         void updateLabels();
 

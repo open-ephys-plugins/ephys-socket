@@ -81,7 +81,7 @@ EphysSocketEditor::EphysSocketEditor(GenericProcessor* parentNode, EphysSocket *
     depthLabel->setColour(Label::textColourId, Colours::darkgrey);
     addAndMakeVisible(depthLabel);
 
-    depthInput = new Label("Data Type", "2");
+    depthInput = new Label("Data Type", depthString());
     depthInput->setFont(Font("Small Text", 10, Font::plain));
     depthInput->setBounds(140, 72, 50, 15);
     depthInput->setColour(Label::backgroundColourId, Colours::lightgrey);
@@ -141,11 +141,34 @@ EphysSocketEditor::EphysSocketEditor(GenericProcessor* parentNode, EphysSocket *
    // addAndMakeVisible(transposeButton);
 }
 
+String EphysSocketEditor::depthString()
+{
+    switch (node->depth)
+    {
+    case U8:
+        return "U8";
+    case S8:
+        return "S8";
+    case U16:
+        return "U16";
+    case S16:
+        return "S16";
+    case S32:
+        return "S32";
+    case F32:
+        return "F32";
+    case F64:
+        return "F64";
+    default:
+        return "?";
+    }
+}
+
 void EphysSocketEditor::updateLabels()
 {
     channelCountInput->setText(String(node->num_channels), dontSendNotification);
     bufferSizeInput->setText(String(node->num_samp), dontSendNotification);
-    depthInput->setText(String(node->depth), dontSendNotification);
+    depthInput->setText(depthString(), dontSendNotification);
     scaleInput->setText(String(node->data_scale), dontSendNotification);
     offsetInput->setText(String(node->data_offset), dontSendNotification);
 }
