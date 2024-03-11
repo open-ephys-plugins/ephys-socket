@@ -14,7 +14,7 @@ Header::Header()
 
 Header::Header(std::vector<std::byte>& header_bytes)
 {
-    if (header_bytes.size() < 22) {
+    if (header_bytes.size() < HEADER_SIZE) {
         CoreServices::sendStatusMessage("Ephys Socket: Header is too small");
         Header::Header();
         return;
@@ -29,7 +29,7 @@ Header::Header(std::vector<std::byte>& header_bytes)
 
 Header::Header(std::vector<std::byte>& header_bytes, int _offset)
 {
-    if (header_bytes.size() < 22 + _offset) {
+    if (header_bytes.size() < HEADER_SIZE + _offset) {
         CoreServices::sendStatusMessage("Ephys Socket: Vector is too small");
         Header::Header();
         return;

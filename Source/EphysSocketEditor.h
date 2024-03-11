@@ -41,12 +41,6 @@ namespace EphysSocketNode
         /** Called when label is changed */
         void labelTextChanged(Label* label);
 
-        /** Converts Depth enum to string for readability */
-        String depthString();
-
-        /** Updates variables that have been sent as headers */
-        void updateLabels();
-
     private:
 
         // Button that tried to connect to client
@@ -56,38 +50,9 @@ namespace EphysSocketNode
         ScopedPointer<Label> portLabel;
         ScopedPointer<Label> portInput;
 
-        // Buffer size
-        ScopedPointer<Label> bufferSizeMainLabel;
-
-        // x label
-        ScopedPointer<Label> xLabel;
-
-        // Chans
-        ScopedPointer<Label> channelCountLabel;
-        ScopedPointer<Label> channelCountInput;
-
-        // Samples
-        ScopedPointer<Label> bufferSizeLabel;
-        ScopedPointer<Label> bufferSizeInput;
-
-        // Depth
-        ScopedPointer<Label> depthLabel;
-        ScopedPointer<Label> depthInput;
-
         // Fs
         ScopedPointer<Label> sampleRateLabel;
         ScopedPointer<Label> sampleRateInput;
-
-        // Scale
-        ScopedPointer<Label> scaleLabel;
-        ScopedPointer<Label> scaleInput;
-
-        // Offset
-        ScopedPointer<Label> offsetLabel;
-        ScopedPointer<Label> offsetInput;
-
-        // Transpose
-        TextButton transposeButton{ "Transpose" };
 
         // Parent node
         EphysSocket* node;
