@@ -7,6 +7,8 @@
 
 #include <VisualizerEditorHeaders.h>
 
+#include "Header.h"
+
 namespace EphysSocketNode
 {
     class EphysSocket;
@@ -48,20 +50,6 @@ namespace EphysSocketNode
         ScopedPointer<Label> portLabel;
         ScopedPointer<Label> portInput;
 
-        // Buffer size
-        ScopedPointer<Label> bufferSizeMainLabel;
-
-        // x label
-        ScopedPointer<Label> xLabel;
-
-        // Chans
-        ScopedPointer<Label> channelCountLabel;
-        ScopedPointer<Label> channelCountInput;
-
-        // Samples
-        ScopedPointer<Label> bufferSizeLabel;
-        ScopedPointer<Label> bufferSizeInput;
-
         // Fs
         ScopedPointer<Label> sampleRateLabel;
         ScopedPointer<Label> sampleRateInput;
@@ -73,9 +61,6 @@ namespace EphysSocketNode
         // Offset
         ScopedPointer<Label> offsetLabel;
         ScopedPointer<Label> offsetInput;
-
-        // Transpose
-        TextButton transposeButton{ "Transpose" };
 
         // Parent node
         EphysSocket* node;

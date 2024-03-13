@@ -3,19 +3,31 @@
 
 #include <DataThreadHeaders.h>
 
-const int DEFAULT_PORT = 9001;
-const float DEFAULT_SAMPLE_RATE = 30000.0f;
-const float DEFAULT_DATA_SCALE = 0.195f;
-const uint16_t DEFAULT_DATA_OFFSET = 32768;
-const int DEFAULT_NUM_SAMPLES = 256;
-const int DEFAULT_NUM_CHANNELS = 64;
+#include "Header.h"
 
 namespace EphysSocketNode
 {
+
     class EphysSocket : public DataThread
     {
 
     public:
+
+        /** Default parameters */
+        const int DEFAULT_PORT = 9001;
+        const float DEFAULT_SAMPLE_RATE = 30000.0f;
+        const float DEFAULT_DATA_SCALE = 0.195f;
+        const float DEFAULT_DATA_OFFSET = 32768.0f;
+
+        /** Parameter limits */
+        const float MIN_DATA_SCALE = 0.0f;
+        const float MAX_DATA_SCALE = 9999.9f;
+        const float MIN_DATA_OFFSET = 0;
+        const float MAX_DATA_OFFSET = 65536;
+        const float MIN_PORT = 1023;
+        const float MAX_PORT = 65535;
+        const float MIN_SAMPLE_RATE = 0;
+        const float MAX_SAMPLE_RATE = 50000.0f;
 
         /** Constructor */
         EphysSocket(SourceNode* sn);
@@ -43,19 +55,40 @@ namespace EphysSocketNode
         /** Resizes buffers when input parameters are changed*/
         void resizeBuffers();
 
+        /** Parse the header */
+        Header parseHeader(std::vector<std::byte> header_bytes);
+
         /** Attempts to reconnect to the socket */
         void tryToConnect();
+
+        /** Runs the Buffer Thread to acquire data */
+        void runBufferThread();
 
         /** Network stream parameters (must match features of incoming data) */
         int port;
         float sample_rate;
-        float data_scale;
-        uint16_t data_offset;
-        bool transpose = true;
         int num_samp;
         int num_channels;
+        Depth depth;
+        float data_scale;
+        float data_offset;
 
     private:
+
+        /** Default socket parameters */
+        const int DEFAULT_NUM_SAMPLES = 256;
+        const int DEFAULT_NUM_CHANNELS = 64;
+        const Depth DEFAULT_DEPTH = U16;
+        const int DEFAULT_ELEMENT_SIZE = 2;
+        const int DEFAULT_NUM_BYTES = 32678; // NB: 256 * 64 * 2
+
+        /** Default parameters */
+        const int DEFAULT_TOTAL_SAMPLES = 0;
+        const int DEFAULT_EVENT_STATE = 0;
+
+        /** Variables that are part of the incoming header */
+        int num_bytes;
+        int element_size;
 
         /** Receives data from network and pushes it to the DataBuffer */
         bool updateBuffer() override;
@@ -65,6 +98,19 @@ namespace EphysSocketNode
 
         /** Stops thread */
         bool stopAcquisition()  override;
+
+        /** Handles incoming HTTP messages */
+        String handleConfigMessage(String msg) override;
+
+        /** Compares a newly parsed header to existing variables */
+        bool compareHeaders(Header header) const;
+
+        /** Compares a newly parsed header to existing variables */
+        bool compareHeaders(std::vector<std::byte>& header_bytes) const;
+
+        /** Template function to convert data */
+        template <typename T>
+        void convertData();
 
         /** Sample index counter */
         int64 total_samples;
@@ -76,11 +122,21 @@ namespace EphysSocketNode
         bool connected = false;
 
         /** UPD socket object */
-        std::unique_ptr<DatagramSocket> socket;
+        //std::unique_ptr<DatagramSocket> socket;
+
+        /** TCP Socket object */
+        std::unique_ptr<StreamingSocket> socket;
 
         /** Internal buffers */
-        uint16_t *recvbuf;
-        float *convbuf;
+        std::vector<std::byte> recvbuf0;
+        std::vector<std::byte> recvbuf1;
+        std::vector<float> convbuf;
+
+        /** Atomic booleans for handling multithreading */
+        std::atomic<bool> full_flag;
+        std::atomic<bool> stop_flag;
+        std::atomic<bool> error_flag;
+        std::atomic<bool> buffer_flag;
 
         Array<int64> sampleNumbers;
         Array<double> timestamps;
