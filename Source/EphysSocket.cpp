@@ -26,6 +26,9 @@ EphysSocket::EphysSocket(SourceNode* sn) : DataThread(sn)
     element_size = DEFAULT_ELEMENT_SIZE;
     num_bytes = DEFAULT_NUM_BYTES;
 
+    data_scale = DEFAULT_DATA_SCALE;
+    data_offset = DEFAULT_DATA_OFFSET;
+
     full_flag = false;
     stop_flag = false;
     error_flag = false;
@@ -152,7 +155,7 @@ void EphysSocket::updateSettings(OwnedArray<ContinuousChannel>* continuousChanne
             "Channel acquired via network stream",
             "ephyssocket.continuous",
 
-            1, // NB: Data scale
+            data_scale,
 
             sourceStreams->getFirst()
         };
@@ -245,7 +248,7 @@ void EphysSocket::convertData()
     int k = 0;
     for (int i = 0; i < num_samp; i++) {
         for (int j = 0; j < num_channels; j++) {
-            convbuf[k++] = (float)buf[j * num_samp + i];
+            convbuf[k++] = data_scale * (float)(buf[j * num_samp + i]) - data_offset;
         }
     }
 }
@@ -367,4 +370,102 @@ bool EphysSocket::updateBuffer()
     
     else
         return true;
+}
+
+String EphysSocket::handleConfigMessage(String msg)
+{
+    // Available commands:
+    // ES INFO - Returns info on current variables that can be modified over HTTP
+    // ES SCALE <data_scale>        - Updates the data scale to data_scale
+    // ES OFFSET <data_offset>      - Updates the offset to data_offset
+    // ES PORT <port>               - Updates the port number that EphysSocket connects to
+    // ES FREQUENCY <sample_rate>   - Updates the sampling rate
+
+    if (CoreServices::getAcquisitionStatus()) {
+        return "Ephys Socket plugin cannot update settings while acquisition is active.";
+    }
+
+    StringArray parts = StringArray::fromTokens(msg, " ", "");
+
+    if (parts.size() > 0)
+    {
+        if (parts[0].equalsIgnoreCase("ES"))
+        {
+            if (parts.size() == 3)
+            {
+                if (parts[1].equalsIgnoreCase("SCALE"))
+                {
+                    float scale = parts[2].getFloatValue();
+
+                    if (scale > MIN_DATA_SCALE && scale < MAX_DATA_SCALE)
+                    {
+                        data_scale = scale;
+                        LOGC("Scale updated to: ", scale);
+                        return "SUCCESS";
+                    }
+
+                    return "Invalid scale requested. Scale can be set between '" + String(MIN_DATA_SCALE) + "' and '" + String(MAX_DATA_SCALE) + "'";
+                }
+                else if (parts[1].equalsIgnoreCase("OFFSET"))
+                {
+                    float offset = parts[2].getFloatValue();
+
+                    if (offset >= MIN_DATA_OFFSET && offset < MAX_DATA_OFFSET)
+                    {
+                        data_offset = offset;
+                        LOGC("Offset updated to: ", offset);
+                        return "SUCCESS";
+                    }
+
+                    return "Invalid offset requested. Offset can be set between '" + String(MIN_DATA_OFFSET) + "' and '" + String(MAX_DATA_OFFSET) + "'";
+                }
+                else if (parts[1].equalsIgnoreCase("PORT"))
+                {
+                    float _port = parts[2].getFloatValue();
+
+                    if (_port > MIN_PORT && _port < MAX_PORT)
+                    {
+                        port = _port;
+                        LOGC("Port updated to: ", _port);
+                        return "SUCCESS";
+                    }
+
+                    return "Invalid port requested. Port can be set between '" + String(MIN_PORT) + "' and '" + String(MAX_PORT) + "'";
+                }
+                else if (parts[1].equalsIgnoreCase("FREQUENCY"))
+                {
+                    float frequency = parts[2].getFloatValue();
+
+                    if (frequency > MIN_SAMPLE_RATE && frequency < MAX_SAMPLE_RATE)
+                    {
+                        sample_rate = frequency;
+                        LOGC("Frequency updated to: ", sample_rate);
+                        return "SUCCESS";
+                    }
+
+                    return "Invalid frequency requested. Frequency can be set between '" + String(MIN_SAMPLE_RATE) + "' and '" + String(MAX_SAMPLE_RATE) + "'";
+                }
+                else
+                {
+                    return "ES command " + parts[1] + "not recognized.";
+                }
+            }
+            else if (parts.size() == 2)
+            {
+                if (parts[1].equalsIgnoreCase("INFO"))
+                {
+                    return "Port = " + String(port) + ". Sample rate = " + String(sample_rate) + 
+                        "Scale = " + String(data_scale) + ". Offset = " + String(data_offset) + ".";
+                }
+                else
+                {
+                    return "ES command " + parts[1] + "not recognized.";
+                }
+            }
+
+            return "Unknown number of inputs given.";
+        }
+
+        return "Command not recognized.";
+    }
 }

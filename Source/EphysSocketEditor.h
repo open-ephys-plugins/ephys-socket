@@ -54,6 +54,14 @@ namespace EphysSocketNode
         ScopedPointer<Label> sampleRateLabel;
         ScopedPointer<Label> sampleRateInput;
 
+        // Scale
+        ScopedPointer<Label> scaleLabel;
+        ScopedPointer<Label> scaleInput;
+
+        // Offset
+        ScopedPointer<Label> offsetLabel;
+        ScopedPointer<Label> offsetInput;
+
         // Parent node
         EphysSocket* node;
 
