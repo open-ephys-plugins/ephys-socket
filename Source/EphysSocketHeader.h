@@ -8,18 +8,18 @@ namespace EphysSocketNode
 	enum Depth { U8, S8, U16, S16, S32, F32, F64 };
 
 	/** Socket parameters */
-	const int MAX_PACKET_SIZE = 65506;
+	//const int MAX_PACKET_SIZE = 65506; // UDP
 	const int HEADER_SIZE = 22;
 
-	class Header
+	struct EphysSocketHeader
 	{
 	public:
 
-		Header();
+		EphysSocketHeader();
 
-		Header(std::vector<std::byte>& header_bytes);
+		EphysSocketHeader(std::vector<std::byte>& header_bytes);
 
-		Header(std::vector<std::byte>& header_bytes, int offset);
+		EphysSocketHeader(std::vector<std::byte>& header_bytes, int offset);
 
 		int offset;
 		int num_bytes;
