@@ -54,12 +54,14 @@ void EphysSocket::tryToConnect()
 {
 	if (socket != nullptr)
 	{
-		socket->shutdown();
+        //socket->shutdown(); // UDP
+        socket->close();
         socket.reset();
 	}
-    
+
+    /* UDP
     socket = std::make_unique<DatagramSocket>();
-    
+
     bool bound = socket->bindToPort(port);
 
     if (bound)
@@ -69,7 +71,10 @@ void EphysSocket::tryToConnect()
     }
     else {
         LOGC("EphysSocket could not bind socket to port ", port);
-    }
+    }*/
+
+    socket = std::make_unique<StreamingSocket>();
+    connected = socket->connect("localhost", port, 500);
 
     if (connected)
     {
@@ -77,15 +82,21 @@ void EphysSocket::tryToConnect()
 
         std::vector<std::byte> header_bytes(HEADER_SIZE);
 
+        LOGD("Reading header...");
         int rc = socket->read(header_bytes.data(), HEADER_SIZE, true);
 
         Header tmp_header = parseHeader(header_bytes);
+        LOGD("Header read and parsed correctly.");
 
         num_bytes = tmp_header.num_bytes;
         depth = tmp_header.depth;
         element_size = tmp_header.element_size;
         num_samp = tmp_header.num_samp;
         num_channels = tmp_header.num_channels;
+
+        const int matrix_size = num_channels * num_samp * element_size;
+        header_bytes.reserve(matrix_size);
+        socket->read(header_bytes.data(), matrix_size, true); // NB: Realign stream to the beginning of a packet
     }
     else {
         LOGC("EphysSocket failed to connect");
@@ -242,45 +253,45 @@ void EphysSocket::convertData()
 void EphysSocket::runBufferThread()
 {
     const int matrix_size = num_channels * num_samp * element_size;
-    const int num_expected_packets = (matrix_size / MAX_PACKET_SIZE) + 1;
-    const int max_data_size = num_expected_packets == 1 ? matrix_size : MAX_PACKET_SIZE - HEADER_SIZE;
+    const int num_expected_packets = 1;
+    //const int num_expected_packets = (matrix_size / MAX_PACKET_SIZE) + 1; // UDP
+    //const int max_data_size = num_expected_packets == 1 ? matrix_size : MAX_PACKET_SIZE - HEADER_SIZE; // UDP
 
     std::vector<std::byte> read_buffer;
-    read_buffer.resize(matrix_size + HEADER_SIZE * num_expected_packets);
+    read_buffer.resize(matrix_size + HEADER_SIZE);
 
     int rc;
     Header header;
 
-    // NB: If mutliple packets are needed for the matrix, they can be misaligned by
-    // reading the header in tryToConnect(); two consecutive reads realigns the
-    // packets and allows correct reconstruction of the whole matrix  
-    rc = socket->read(read_buffer.data(), HEADER_SIZE, true);
-    rc = socket->read(read_buffer.data(), HEADER_SIZE, true);
-
     while (!stop_flag)
     {
-        rc = socket->read(read_buffer.data(), matrix_size + HEADER_SIZE * num_expected_packets, true);
+        rc = socket->read(read_buffer.data(), matrix_size + HEADER_SIZE, true);
 
         if (rc == -1)
         {
             if (socket->getRawSocketHandle() == -1)
             {
-                CoreServices::sendStatusMessage("Ephys Socket: Socket handle is no longer valid.");
+                CoreServices::sendStatusMessage("Ephys Socket: Socket handle invalid.");
+                LOGE("Ephys Socket: Socket handle is invalid, returns -1");
+                error_flag = true;
                 return;
             }
 
             CoreServices::sendStatusMessage("Ephys Socket: Data shape mismatch");
+            LOGE("Ephys Socket: Socket read did not complete, returns -1");
             error_flag = true;
             return;
         }
 
         for (int i = 0; i < num_expected_packets; i++)
         {
-            header = Header(read_buffer, i * (max_data_size + HEADER_SIZE));
+            //header = Header(read_buffer, i * (max_data_size + HEADER_SIZE)); // UDP
+            header = Header(read_buffer);
 
             if (!compareHeaders(header))
             {
                 CoreServices::sendStatusMessage("Ephys Socket: Header mismatch");
+                LOGE("Ephys Socket: Header values have changed since first connecting");
                 error_flag = true;
                 return;
             }
@@ -288,11 +299,12 @@ void EphysSocket::runBufferThread()
             if (i == 0 && header.offset != 0)
             {
                 CoreServices::sendStatusMessage("Ephys Socket: Packets were dropped");
+                LOGE("Ephys Socket: [UDP] First packet does not have offset of 0; data is misaligned");
                 error_flag = true;
                 return;
             }
-
-            int current_offset = HEADER_SIZE * (i + 1) + header.offset;
+        
+            int current_offset = HEADER_SIZE * (i + 1) + header.offset; 
 
             if (!buffer_flag) {
                 std::copy(read_buffer.begin() + current_offset, read_buffer.begin() + current_offset + header.num_bytes, recvbuf0.begin() + header.offset);

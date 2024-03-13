@@ -105,7 +105,10 @@ namespace EphysSocketNode
         bool connected = false;
 
         /** UPD socket object */
-        std::unique_ptr<DatagramSocket> socket;
+        //std::unique_ptr<DatagramSocket> socket;
+
+        /** TCP Socket object */
+        std::unique_ptr<StreamingSocket> socket;
 
         /** Internal buffers */
         std::vector<std::byte> recvbuf0;
