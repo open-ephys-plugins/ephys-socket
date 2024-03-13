@@ -7,7 +7,7 @@
 
 #include <VisualizerEditorHeaders.h>
 
-#include "Header.h"
+#include "EphysSocketHeader.h"
 
 namespace EphysSocketNode
 {

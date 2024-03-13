@@ -3,7 +3,7 @@
 
 #include <DataThreadHeaders.h>
 
-#include "Header.h"
+#include "EphysSocketHeader.h"
 
 namespace EphysSocketNode
 {
@@ -55,9 +55,6 @@ namespace EphysSocketNode
         /** Resizes buffers when input parameters are changed*/
         void resizeBuffers();
 
-        /** Parse the header */
-        Header parseHeader(std::vector<std::byte> header_bytes);
-
         /** Attempts to reconnect to the socket */
         void tryToConnect();
 
@@ -103,10 +100,7 @@ namespace EphysSocketNode
         String handleConfigMessage(String msg) override;
 
         /** Compares a newly parsed header to existing variables */
-        bool compareHeaders(Header header) const;
-
-        /** Compares a newly parsed header to existing variables */
-        bool compareHeaders(std::vector<std::byte>& header_bytes) const;
+        bool compareHeaders(EphysSocketHeader header) const;
 
         /** Template function to convert data */
         template <typename T>

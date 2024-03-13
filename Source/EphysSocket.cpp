@@ -48,11 +48,6 @@ EphysSocket::~EphysSocket()
 {
 }
 
-Header EphysSocket::parseHeader(std::vector<std::byte> header_bytes)
-{
-    return Header(header_bytes);
-}
-
 void EphysSocket::tryToConnect()
 {
 	if (socket != nullptr)
@@ -88,7 +83,16 @@ void EphysSocket::tryToConnect()
         LOGD("Reading header...");
         int rc = socket->read(header_bytes.data(), HEADER_SIZE, true);
 
-        Header tmp_header = parseHeader(header_bytes);
+        if (rc != HEADER_SIZE)
+        {
+            LOGC("EphysSocket failed to connect; could not read header from stream.");
+
+            connected = false;
+            socket->close();
+            socket.reset();
+        }
+
+        EphysSocketHeader tmp_header = EphysSocketHeader(header_bytes);
         LOGD("Header read and parsed correctly.");
 
         num_bytes = tmp_header.num_bytes;
@@ -214,7 +218,7 @@ bool EphysSocket::stopAcquisition()
     return true;
 }
 
-bool EphysSocket::compareHeaders(Header header) const
+bool EphysSocket::compareHeaders(EphysSocketHeader header) const
 {
     if (header.depth != depth ||
         header.element_size != element_size ||
@@ -225,12 +229,6 @@ bool EphysSocket::compareHeaders(Header header) const
     }
 
     return true;
-}
-
-bool EphysSocket::compareHeaders(std::vector<std::byte>& header_bytes) const
-{
-    Header header = Header(header_bytes);
-    return compareHeaders(header);
 }
 
 template <typename T>
@@ -264,7 +262,7 @@ void EphysSocket::runBufferThread()
     read_buffer.resize(matrix_size + HEADER_SIZE);
 
     int rc;
-    Header header;
+    EphysSocketHeader header;
 
     while (!stop_flag)
     {
@@ -289,7 +287,7 @@ void EphysSocket::runBufferThread()
         for (int i = 0; i < num_expected_packets; i++)
         {
             //header = Header(read_buffer, i * (max_data_size + HEADER_SIZE)); // UDP
-            header = Header(read_buffer);
+            header = EphysSocketHeader(read_buffer);
 
             if (!compareHeaders(header))
             {
