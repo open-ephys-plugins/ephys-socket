@@ -90,6 +90,7 @@ void EphysSocket::tryToConnect()
             connected = false;
             socket->close();
             socket.reset();
+            return;
         }
 
         EphysSocketHeader tmp_header = EphysSocketHeader(header_bytes);
@@ -246,7 +247,7 @@ void EphysSocket::convertData()
     int k = 0;
     for (int i = 0; i < num_samp; i++) {
         for (int j = 0; j < num_channels; j++) {
-            convbuf[k++] = data_scale * (float)(buf[j * num_samp + i]) - data_offset;
+            convbuf[k++] = data_scale * ((float)(buf[j * num_samp + i]) - data_offset);
         }
     }
 }
