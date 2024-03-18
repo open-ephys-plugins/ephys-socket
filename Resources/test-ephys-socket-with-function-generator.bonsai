@@ -1,82 +1,76 @@
 ﻿<?xml version="1.0" encoding="utf-8"?>
-<WorkflowBuilder Version="2.7.1"
+<WorkflowBuilder Version="2.8.1"
                  xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
-                 xmlns:dsp="clr-namespace:Bonsai.Dsp;assembly=Bonsai.Dsp"
-                 xmlns:p1="clr-namespace:Bonsai.JonsUtils;assembly=Bonsai.JonsUtils"
+                 xmlns:p1="clr-namespace:OpenEphys.Sockets.Bonsai;assembly=OpenEphys.Sockets.Bonsai"
                  xmlns:rx="clr-namespace:Bonsai.Reactive;assembly=Bonsai.Core"
+                 xmlns:sys="clr-namespace:System;assembly=mscorlib"
+                 xmlns:dsp="clr-namespace:Bonsai.Dsp;assembly=Bonsai.Dsp"
                  xmlns="https://bonsai-rx.org/2018/workflow">
   <Workflow>
     <Nodes>
       <Expression xsi:type="Combinator">
+        <Combinator xsi:type="p1:CreateTcpServer">
+          <p1:Name>TCP</p1:Name>
+          <p1:Port>9001</p1:Port>
+          <p1:Address>localhost</p1:Address>
+        </Combinator>
+      </Expression>
+      <Expression xsi:type="Combinator">
+        <Combinator xsi:type="rx:Timer">
+          <rx:DueTime>PT0S</rx:DueTime>
+          <rx:Period>PT0.1S</rx:Period>
+        </Combinator>
+      </Expression>
+      <Expression xsi:type="Mod">
+        <Operand xsi:type="WorkflowProperty" TypeArguments="sys:Int64">
+          <Value>50</Value>
+        </Operand>
+      </Expression>
+      <Expression xsi:type="Add">
+        <Operand xsi:type="WorkflowProperty" TypeArguments="sys:Int64">
+          <Value>25</Value>
+        </Operand>
+      </Expression>
+      <Expression xsi:type="PropertyMapping">
+        <PropertyMappings>
+          <Property Name="Amplitude" />
+        </PropertyMappings>
+      </Expression>
+      <Expression xsi:type="Combinator">
         <Combinator xsi:type="dsp:FunctionGenerator">
-          <dsp:BufferLength>256</dsp:BufferLength>
+          <dsp:BufferLength>2048</dsp:BufferLength>
           <dsp:Frequency>10</dsp:Frequency>
           <dsp:Waveform>Sine</dsp:Waveform>
           <dsp:SampleRate>30000</dsp:SampleRate>
           <dsp:Depth>U16</dsp:Depth>
-          <dsp:Amplitude>500</dsp:Amplitude>
-          <dsp:Offset>32768</dsp:Offset>
+          <dsp:Amplitude>25</dsp:Amplitude>
+          <dsp:Offset>75</dsp:Offset>
           <dsp:Phase>0</dsp:Phase>
         </Combinator>
       </Expression>
       <Expression xsi:type="Combinator">
-        <Combinator xsi:type="dsp:FunctionGenerator">
-          <dsp:BufferLength>256</dsp:BufferLength>
-          <dsp:Frequency>10</dsp:Frequency>
-          <dsp:Waveform>Sawtooth</dsp:Waveform>
-          <dsp:SampleRate>30000</dsp:SampleRate>
-          <dsp:Depth>U16</dsp:Depth>
-          <dsp:Amplitude>500</dsp:Amplitude>
-          <dsp:Offset>32768</dsp:Offset>
-          <dsp:Phase>0</dsp:Phase>
+        <Combinator xsi:type="dsp:SelectChannels">
+          <dsp:Channels>
+            <dsp:int>0</dsp:int>
+            <dsp:int>0</dsp:int>
+            <dsp:int>0</dsp:int>
+            <dsp:int>0</dsp:int>
+          </dsp:Channels>
         </Combinator>
       </Expression>
       <Expression xsi:type="Combinator">
-        <Combinator xsi:type="dsp:FunctionGenerator">
-          <dsp:BufferLength>256</dsp:BufferLength>
-          <dsp:Frequency>10</dsp:Frequency>
-          <dsp:Waveform>Triangular</dsp:Waveform>
-          <dsp:SampleRate>30000</dsp:SampleRate>
-          <dsp:Depth>U16</dsp:Depth>
-          <dsp:Amplitude>500</dsp:Amplitude>
-          <dsp:Offset>32768</dsp:Offset>
-          <dsp:Phase>0</dsp:Phase>
-        </Combinator>
-      </Expression>
-      <Expression xsi:type="Combinator">
-        <Combinator xsi:type="dsp:FunctionGenerator">
-          <dsp:BufferLength>256</dsp:BufferLength>
-          <dsp:Frequency>10</dsp:Frequency>
-          <dsp:Waveform>Square</dsp:Waveform>
-          <dsp:SampleRate>30000</dsp:SampleRate>
-          <dsp:Depth>U16</dsp:Depth>
-          <dsp:Amplitude>500</dsp:Amplitude>
-          <dsp:Offset>32768</dsp:Offset>
-          <dsp:Phase>0</dsp:Phase>
-        </Combinator>
-      </Expression>
-      <Expression xsi:type="Combinator">
-        <Combinator xsi:type="rx:Zip" />
-      </Expression>
-      <Expression xsi:type="Combinator">
-        <Combinator xsi:type="dsp:Concat">
-          <dsp:Axis>0</dsp:Axis>
-        </Combinator>
-      </Expression>
-      <Expression xsi:type="Combinator">
-        <Combinator xsi:type="p1:OpenCVMatUDPClient">
-          <p1:addr>localhost</p1:addr>
-          <p1:port>9001</p1:port>
+        <Combinator xsi:type="p1:SendTcpData">
+          <p1:Connection>TCP</p1:Connection>
         </Combinator>
       </Expression>
     </Nodes>
     <Edges>
-      <Edge From="0" To="4" Label="Source1" />
-      <Edge From="1" To="4" Label="Source2" />
-      <Edge From="2" To="4" Label="Source3" />
-      <Edge From="3" To="4" Label="Source4" />
+      <Edge From="1" To="2" Label="Source1" />
+      <Edge From="2" To="3" Label="Source1" />
+      <Edge From="3" To="4" Label="Source1" />
       <Edge From="4" To="5" Label="Source1" />
       <Edge From="5" To="6" Label="Source1" />
+      <Edge From="6" To="7" Label="Source1" />
     </Edges>
   </Workflow>
 </WorkflowBuilder>
