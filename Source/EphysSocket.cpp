@@ -62,7 +62,7 @@ void EphysSocket::disconnectSocket()
     }
 }
 
-void EphysSocket::tryToConnect()
+bool EphysSocket::tryToConnect()
 {
     disconnectSocket();
 
@@ -95,9 +95,10 @@ void EphysSocket::tryToConnect()
         if (rc != HEADER_SIZE)
         {
             LOGC("EphysSocket failed to connect; could not read header from stream.");
+            CoreServices::sendStatusMessage("Ephys Socket: Could not read header from stream.");
 
             disconnectSocket();
-            return;
+            return false;
         }
 
         EphysSocketHeader tmp_header = EphysSocketHeader(header_bytes);
@@ -112,10 +113,19 @@ void EphysSocket::tryToConnect()
         const int matrix_size = num_channels * num_samp * element_size;
         header_bytes.reserve(matrix_size);
         socket->read(header_bytes.data(), matrix_size, true); // NB: Realign stream to the beginning of a packet
+
+        return true;
     }
     else {
         LOGC("EphysSocket failed to connect");
+        CoreServices::sendStatusMessage("Ephys Socket: Socket could not connect.");
+        return false;
     }
+}
+
+bool EphysSocket::errorFlag()
+{
+    return error_flag;
 }
 
 void EphysSocket::resizeBuffers()

@@ -46,8 +46,14 @@ namespace EphysSocketNode
         // Button that tries to connect to server
         ScopedPointer<UtilityButton> connectButton;
 
+        // Changes colors and disables UI elements
+        void disableInputs();
+
         // Button that disconnects from server
         ScopedPointer<UtilityButton> disconnectButton;
+
+        // Changes colors and enables UI elements
+        void enableInputs();
 
         // Port
         ScopedPointer<Label> portLabel;

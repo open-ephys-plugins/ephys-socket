@@ -145,13 +145,46 @@ void EphysSocketEditor::labelTextChanged(Label* label)
 
 void EphysSocketEditor::startAcquisition()
 {
-    // Disable the whole UI
     disconnectButton->setEnabled(false);
 }
 
 void EphysSocketEditor::stopAcquisition()
 {
+    if (node->errorFlag())
+    {
+        node->disconnectSocket();
+        enableInputs();
+    }
+    else
+    {
+        disconnectButton->setEnabled(true);
+    }
+}
+
+void EphysSocketEditor::disableInputs()
+{
+    connectButton->setEnabled(false);
+    connectButton->setAlpha(0.2f);
     disconnectButton->setEnabled(true);
+    disconnectButton->setAlpha(1.0f);
+
+    portInput->setEnabled(false);
+    sampleRateInput->setEnabled(false);
+    scaleInput->setEnabled(false);
+    offsetInput->setEnabled(false);
+}
+
+void EphysSocketEditor::enableInputs()
+{
+    connectButton->setEnabled(true);
+    connectButton->setAlpha(1.0f);
+    disconnectButton->setEnabled(false);
+    disconnectButton->setAlpha(0.2f);
+
+    portInput->setEnabled(true);
+    sampleRateInput->setEnabled(true);
+    scaleInput->setEnabled(true);
+    offsetInput->setEnabled(true);
 }
 
 void EphysSocketEditor::buttonClicked(Button* button)
@@ -159,33 +192,18 @@ void EphysSocketEditor::buttonClicked(Button* button)
     if (button == connectButton && !acquisitionIsActive)
     {
         node->port = portInput->getText().getIntValue();
-        node->tryToConnect();
-
-        connectButton->setEnabled(false);
-        connectButton->setAlpha(0.2f);
-        disconnectButton->setEnabled(true);
-        disconnectButton->setAlpha(1.0f);
-
-        portInput->setEnabled(false);
-        sampleRateInput->setEnabled(false);
-        scaleInput->setEnabled(false);
-        offsetInput->setEnabled(false);
+        
+        if (node->tryToConnect())
+        {
+            disableInputs();
+        }
 
         CoreServices::updateSignalChain(this);
     }
     else if (button == disconnectButton && !acquisitionIsActive)
     {
         node->disconnectSocket();
-
-        connectButton->setEnabled(true);
-        connectButton->setAlpha(1.0f);
-        disconnectButton->setEnabled(false);
-        disconnectButton->setAlpha(0.2f);
-
-        portInput->setEnabled(true);
-        sampleRateInput->setEnabled(true);
-        scaleInput->setEnabled(true);
-        offsetInput->setEnabled(true);
+        enableInputs();
     }
 }
 

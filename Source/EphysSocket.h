@@ -59,7 +59,10 @@ namespace EphysSocketNode
         void disconnectSocket();
 
         /** Attempts to connect to the socket */
-        void tryToConnect();
+        bool tryToConnect();
+
+        /** Returns if any errors were thrown during acquisition, such as invalid headers or unable to read from socket */
+        bool errorFlag();
 
         /** Runs the Buffer Thread to acquire data */
         void runBufferThread();
