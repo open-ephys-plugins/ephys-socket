@@ -146,21 +146,12 @@ void EphysSocketEditor::labelTextChanged(Label* label)
 void EphysSocketEditor::startAcquisition()
 {
     // Disable the whole UI
-    portInput->setEnabled(false);
-    sampleRateInput->setEnabled(false);
     disconnectButton->setEnabled(false);
-    scaleInput->setEnabled(false);
-    offsetInput->setEnabled(false);
 }
 
 void EphysSocketEditor::stopAcquisition()
 {
-    // Reenable the whole UI
-    portInput->setEnabled(true);
-    sampleRateInput->setEnabled(true);
     disconnectButton->setEnabled(true);
-    scaleInput->setEnabled(true);
-    offsetInput->setEnabled(true);
 }
 
 void EphysSocketEditor::buttonClicked(Button* button)
