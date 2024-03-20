@@ -55,7 +55,10 @@ namespace EphysSocketNode
         /** Resizes buffers when input parameters are changed*/
         void resizeBuffers();
 
-        /** Attempts to reconnect to the socket */
+        /** Disconnects the socket */
+        void disconnectSocket();
+
+        /** Attempts to connect to the socket */
         void tryToConnect();
 
         /** Runs the Buffer Thread to acquire data */

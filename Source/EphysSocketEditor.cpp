@@ -15,9 +15,18 @@ EphysSocketEditor::EphysSocketEditor(GenericProcessor* parentNode, EphysSocket *
     // Add connect button
     connectButton = new UtilityButton("CONNECT", Font("Small Text", 12, Font::bold));
     connectButton->setRadius(3.0f);
-    connectButton->setBounds(50, 35, 80, 20);
+    connectButton->setBounds(15, 35, 70, 20);
     connectButton->addListener(this);
     addAndMakeVisible(connectButton);
+
+    // Add disconnect button
+    disconnectButton = new UtilityButton("DISCONNECT", Font("Small Text", 12, Font::bold));
+    disconnectButton->setRadius(3.0f);
+    disconnectButton->setBounds(100, 35, 70, 20);
+    disconnectButton->addListener(this);
+    disconnectButton->setEnabled(false);
+    disconnectButton->setAlpha(0.2f);
+    addAndMakeVisible(disconnectButton);
 
     // Port
     portLabel = new Label("Port", "Port");
@@ -139,7 +148,7 @@ void EphysSocketEditor::startAcquisition()
     // Disable the whole UI
     portInput->setEnabled(false);
     sampleRateInput->setEnabled(false);
-    connectButton->setEnabled(false);
+    disconnectButton->setEnabled(false);
     scaleInput->setEnabled(false);
     offsetInput->setEnabled(false);
 }
@@ -149,7 +158,7 @@ void EphysSocketEditor::stopAcquisition()
     // Reenable the whole UI
     portInput->setEnabled(true);
     sampleRateInput->setEnabled(true);
-    connectButton->setEnabled(true);
+    disconnectButton->setEnabled(true);
     scaleInput->setEnabled(true);
     offsetInput->setEnabled(true);
 }
@@ -161,7 +170,31 @@ void EphysSocketEditor::buttonClicked(Button* button)
         node->port = portInput->getText().getIntValue();
         node->tryToConnect();
 
+        connectButton->setEnabled(false);
+        connectButton->setAlpha(0.2f);
+        disconnectButton->setEnabled(true);
+        disconnectButton->setAlpha(1.0f);
+
+        portInput->setEnabled(false);
+        sampleRateInput->setEnabled(false);
+        scaleInput->setEnabled(false);
+        offsetInput->setEnabled(false);
+
         CoreServices::updateSignalChain(this);
+    }
+    else if (button == disconnectButton && !acquisitionIsActive)
+    {
+        node->disconnectSocket();
+
+        connectButton->setEnabled(true);
+        connectButton->setAlpha(1.0f);
+        disconnectButton->setEnabled(false);
+        disconnectButton->setAlpha(0.2f);
+
+        portInput->setEnabled(true);
+        sampleRateInput->setEnabled(true);
+        scaleInput->setEnabled(true);
+        offsetInput->setEnabled(true);
     }
 }
 

@@ -43,8 +43,11 @@ namespace EphysSocketNode
 
     private:
 
-        // Button that tried to connect to client
+        // Button that tries to connect to server
         ScopedPointer<UtilityButton> connectButton;
+
+        // Button that disconnects from server
+        ScopedPointer<UtilityButton> disconnectButton;
 
         // Port
         ScopedPointer<Label> portLabel;

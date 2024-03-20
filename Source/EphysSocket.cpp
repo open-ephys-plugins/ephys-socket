@@ -48,14 +48,23 @@ EphysSocket::~EphysSocket()
 {
 }
 
-void EphysSocket::tryToConnect()
+void EphysSocket::disconnectSocket()
 {
-	if (socket != nullptr)
-	{
+    if (socket != nullptr)
+    {
+        LOGD("Disconnecting socket.");
+
         //socket->shutdown(); // UDP
         socket->close();
         socket.reset();
-	}
+
+        connected = false;
+    }
+}
+
+void EphysSocket::tryToConnect()
+{
+    disconnectSocket();
 
     /* UDP
     socket = std::make_unique<DatagramSocket>();
@@ -87,9 +96,7 @@ void EphysSocket::tryToConnect()
         {
             LOGC("EphysSocket failed to connect; could not read header from stream.");
 
-            connected = false;
-            socket->close();
-            socket.reset();
+            disconnectSocket();
             return;
         }
 
