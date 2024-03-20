@@ -272,6 +272,11 @@ void EphysSocket::runBufferThread()
     int rc;
     EphysSocketHeader header;
 
+    do
+    {
+        rc = socket->read(read_buffer.data(), matrix_size + HEADER_SIZE, false);
+    } while (rc == matrix_size + HEADER_SIZE);
+
     while (!stop_flag)
     {
         rc = socket->read(read_buffer.data(), matrix_size + HEADER_SIZE, true);
@@ -323,6 +328,8 @@ void EphysSocket::runBufferThread()
             }
         }
         
+        while (full_flag) sleep(1);
+
         if (depth == U8) {
             convertData<uint8_t>();
         }
