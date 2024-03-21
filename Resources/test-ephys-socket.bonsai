@@ -9,7 +9,7 @@
   <Workflow>
     <Nodes>
       <Expression xsi:type="Combinator">
-        <Combinator xsi:type="p1:CreateTcpServer">
+        <Combinator xsi:type="p1:TcpServer">
           <p1:Name>TCP</p1:Name>
           <p1:Port>9001</p1:Port>
           <p1:Address>localhost</p1:Address>
@@ -47,7 +47,7 @@
         </Combinator>
       </Expression>
       <Expression xsi:type="Combinator">
-        <Combinator xsi:type="p1:SendTcpData">
+        <Combinator xsi:type="p1:SendMatOverSocket">
           <p1:Connection>TCP</p1:Connection>
         </Combinator>
       </Expression>
