@@ -285,6 +285,10 @@ bool EphysSocket::updateBuffer()
             if (rc != 0) {
                 bytes_received += rc;
             }
+
+            if (threadShouldExit()) {
+                return false;
+            }
         }
     }
     
