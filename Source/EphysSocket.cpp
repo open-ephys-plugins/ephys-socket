@@ -348,6 +348,10 @@ String EphysSocket::handleConfigMessage(String msg)
         return "Ephys Socket plugin cannot update settings while acquisition is active.";
     }
 
+    if (connected) {
+        return "Ephys Socket plugin cannot update settings while connected to an active socket.";
+    }
+
     StringArray parts = StringArray::fromTokens(msg, " ", "");
 
     if (parts.size() > 0)
