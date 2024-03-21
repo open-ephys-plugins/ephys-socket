@@ -29,10 +29,7 @@ EphysSocket::EphysSocket(SourceNode* sn) : DataThread(sn)
     data_scale = DEFAULT_DATA_SCALE;
     data_offset = DEFAULT_DATA_OFFSET;
 
-    full_flag = false;
-    stop_flag = false;
     error_flag = false;
-    buffer_flag = false;
 
     sourceBuffers.add(new DataBuffer(num_channels, 10000)); // start with 2 channels and automatically resize
 }
@@ -116,8 +113,7 @@ bool EphysSocket::errorFlag()
 void EphysSocket::resizeBuffers()
 {
     sourceBuffers[0]->resize(num_channels, 10000);
-    recvbuf0.resize(num_channels * num_samp * element_size);
-    recvbuf1.resize(num_channels * num_samp * element_size);
+    read_buffer.resize(num_channels * num_samp * element_size + HEADER_SIZE);
     convbuf.resize(num_channels * num_samp);
     sampleNumbers.resize(num_samp);
     timestamps.clear();
@@ -194,12 +190,6 @@ bool EphysSocket::startAcquisition()
     total_samples = 0;
     eventState = 0;
 
-    error_flag = false;
-    stop_flag = false;
-    full_flag = false;
-    buffer_flag = false;
-
-    Thread::launch([this] {runBufferThread(); });
     startThread();
 
     return true;
@@ -211,8 +201,6 @@ bool EphysSocket::stopAcquisition()
     {
         signalThreadShouldExit();
     }
-
-    stop_flag = true;
 
     waitForThreadToExit(500);
 
@@ -236,14 +224,7 @@ bool EphysSocket::compareHeaders(EphysSocketHeader header) const
 template <typename T>
 void EphysSocket::convertData()
 {
-    T* buf;
-
-    if (!buffer_flag) {
-        buf = (T*)recvbuf0.data();
-    }
-    else {
-        buf = (T*)recvbuf1.data();
-    }
+    T* buf = (T*)(read_buffer.data() + HEADER_SIZE);
 
     int k = 0;
     for (int i = 0; i < num_samp; i++) {
@@ -253,119 +234,92 @@ void EphysSocket::convertData()
     }
 }
 
-void EphysSocket::runBufferThread()
+bool EphysSocket::updateBuffer()
 {
-    const int matrix_size = num_channels * num_samp * element_size;
+    const int bytes_expected = num_channels * num_samp * element_size + HEADER_SIZE;
     const int num_expected_packets = 1;
-
-    std::vector<std::byte> read_buffer;
-    read_buffer.resize(matrix_size + HEADER_SIZE);
 
     int rc;
     EphysSocketHeader header;
 
-    do
-    {
-        rc = socket->read(read_buffer.data(), matrix_size + HEADER_SIZE, false);
-    } while (rc == matrix_size + HEADER_SIZE);
+    rc = socket->read(read_buffer.data(), bytes_expected, false);
 
-    while (!stop_flag)
+    if (rc == -1)
     {
-        rc = socket->read(read_buffer.data(), matrix_size + HEADER_SIZE, true);
-
-        if (rc == -1)
+        if (socket->getRawSocketHandle() == -1)
         {
-            if (socket->getRawSocketHandle() == -1)
-            {
-                CoreServices::sendStatusMessage("Ephys Socket: Socket handle invalid.");
-                LOGE("Ephys Socket: Socket handle is invalid, returns -1");
-                error_flag = true;
-                return;
-            }
-
-            CoreServices::sendStatusMessage("Ephys Socket: Data shape mismatch");
-            LOGE("Ephys Socket: Socket read did not complete, returns -1");
+            CoreServices::sendStatusMessage("Ephys Socket: Socket handle invalid.");
+            LOGE("Ephys Socket: Socket handle is invalid, returns -1");
             error_flag = true;
-            return;
+            return false;
         }
 
-        for (int i = 0; i < num_expected_packets; i++)
-        {
-            header = EphysSocketHeader(read_buffer);
-
-            if (!compareHeaders(header))
-            {
-                CoreServices::sendStatusMessage("Ephys Socket: Header mismatch");
-                LOGE("Ephys Socket: Header values have changed since first connecting");
-                error_flag = true;
-                return;
-            }
-            
-            int current_offset = HEADER_SIZE * (i + 1) + header.offset; 
-
-            if (!buffer_flag) {
-                std::copy(read_buffer.begin() + current_offset, read_buffer.begin() + current_offset + header.num_bytes, recvbuf0.begin() + header.offset);
-            }
-            else {
-                std::copy(read_buffer.begin() + current_offset, read_buffer.begin() + current_offset + header.num_bytes, recvbuf1.begin() + header.offset);
-            }
-        }
-        
-        while (full_flag) sleep(1);
-
-        if (depth == U8) {
-            convertData<uint8_t>();
-        }
-        else if (depth == S8) {
-            convertData<int8_t>();
-        }
-        else if (depth == U16) {
-            convertData<uint16_t>();
-        }
-        else if (depth == S16) {
-            convertData<int16_t>();
-        }
-        else if (depth == S32) {
-            convertData<int32_t>();
-        }
-        else if (depth == F32) {
-            convertData<float_t>();
-        }
-        else if (depth == F64) {
-            convertData<double_t>();
-        }
-
-        full_flag = true;
-        buffer_flag = !buffer_flag;
-    }
-
-    return;
-}
-
-bool EphysSocket::updateBuffer()
-{
-    if (full_flag)
-    {
-        for (int i = 0; i < num_samp; i++) {
-            sampleNumbers.set(i, total_samples++);
-            ttlEventWords.set(i, eventState);
-        }
-
-        sourceBuffers[0]->addToBuffer(convbuf.data(),
-            sampleNumbers.getRawDataPointer(),
-            timestamps.getRawDataPointer(),
-            ttlEventWords.getRawDataPointer(),
-            num_samp,
-            1);
-
-        full_flag = false;
-    }
-
-    if (error_flag)
+        CoreServices::sendStatusMessage("Ephys Socket: Data shape mismatch");
+        LOGE("Ephys Socket: Socket read did not complete, returns -1");
+        error_flag = true;
         return false;
-    
-    else
+    }
+    else if (rc == 0) {
         return true;
+    }
+    else if (rc != bytes_expected) {
+        int bytes_received = rc;
+
+        while (bytes_received < bytes_expected)
+        {
+            rc = socket->read(read_buffer.data() + bytes_received, bytes_expected - bytes_received, false);
+
+            if (rc != 0) {
+                bytes_received += rc;
+            }
+        }
+    }
+    
+    header = EphysSocketHeader(read_buffer);
+
+    if (!compareHeaders(header))
+    {
+        CoreServices::sendStatusMessage("Ephys Socket: Header mismatch");
+        LOGE("Ephys Socket: Header values have changed since first connecting");
+        error_flag = true;
+        return false;
+    }
+
+    if (depth == U8) {
+        convertData<uint8_t>();
+    }
+    else if (depth == S8) {
+        convertData<int8_t>();
+    }
+    else if (depth == U16) {
+        convertData<uint16_t>();
+    }
+    else if (depth == S16) {
+        convertData<int16_t>();
+    }
+    else if (depth == S32) {
+        convertData<int32_t>();
+    }
+    else if (depth == F32) {
+        convertData<float_t>();
+    }
+    else if (depth == F64) {
+        convertData<double_t>();
+    }
+
+    for (int i = 0; i < num_samp; i++) {
+        sampleNumbers.set(i, total_samples++);
+        ttlEventWords.set(i, eventState);
+    }
+
+    sourceBuffers[0]->addToBuffer(convbuf.data(),
+        sampleNumbers.getRawDataPointer(),
+        timestamps.getRawDataPointer(),
+        ttlEventWords.getRawDataPointer(),
+        num_samp,
+        1);
+
+    return true;
 }
 
 String EphysSocket::handleConfigMessage(String msg)

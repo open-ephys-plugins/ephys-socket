@@ -64,9 +64,6 @@ namespace EphysSocketNode
         /** Returns if any errors were thrown during acquisition, such as invalid headers or unable to read from socket */
         bool errorFlag();
 
-        /** Runs the Buffer Thread to acquire data */
-        void runBufferThread();
-
         /** Network stream parameters (must match features of incoming data) */
         int port;
         float sample_rate;
@@ -125,15 +122,11 @@ namespace EphysSocketNode
         std::unique_ptr<StreamingSocket> socket;
 
         /** Internal buffers */
-        std::vector<std::byte> recvbuf0;
-        std::vector<std::byte> recvbuf1;
+        std::vector<std::byte> read_buffer;
         std::vector<float> convbuf;
 
-        /** Atomic booleans for handling multithreading */
-        std::atomic<bool> full_flag;
-        std::atomic<bool> stop_flag;
-        std::atomic<bool> error_flag;
-        std::atomic<bool> buffer_flag;
+        /** Booleans for handling error states in EphysSocketEditor */
+        bool error_flag;
 
         Array<int64> sampleNumbers;
         Array<double> timestamps;
