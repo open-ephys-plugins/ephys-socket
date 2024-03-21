@@ -146,6 +146,7 @@ void EphysSocketEditor::labelTextChanged(Label* label)
 void EphysSocketEditor::startAcquisition()
 {
     disconnectButton->setEnabled(false);
+    disconnectButton->setAlpha(0.2f);
 }
 
 void EphysSocketEditor::stopAcquisition()
@@ -158,6 +159,7 @@ void EphysSocketEditor::stopAcquisition()
     else
     {
         disconnectButton->setEnabled(true);
+        disconnectButton->setAlpha(1.0f);
     }
 }
 

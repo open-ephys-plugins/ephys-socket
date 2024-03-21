@@ -55,6 +55,8 @@ void EphysSocket::disconnectSocket()
         socket.reset();
 
         connected = false;
+
+        CoreServices::sendStatusMessage("Ephys Socket: Socket disconnected.");
     }
 }
 
@@ -67,19 +69,25 @@ bool EphysSocket::tryToConnect()
 
     if (connected)
     {
-        LOGC("EphysSocket connected.");
-
         std::vector<std::byte> header_bytes(HEADER_SIZE);
 
         LOGD("Reading header...");
-        int rc = socket->read(header_bytes.data(), HEADER_SIZE, true);
+        int rc;
+        
+        for (int i = 0; i < 5; i++) {
+           rc = socket->read(header_bytes.data(), HEADER_SIZE, false);
+
+           if (rc == HEADER_SIZE) break;
+           else sleep(50);
+        }
 
         if (rc != HEADER_SIZE)
         {
+            disconnectSocket();
+
             LOGC("EphysSocket failed to connect; could not read header from stream.");
             CoreServices::sendStatusMessage("Ephys Socket: Could not read header from stream.");
 
-            disconnectSocket();
             return false;
         }
 
@@ -95,6 +103,9 @@ bool EphysSocket::tryToConnect()
         const int matrix_size = num_channels * num_samp * element_size;
         header_bytes.reserve(matrix_size);
         socket->read(header_bytes.data(), matrix_size, true); // NB: Realign stream to the beginning of a packet
+        
+        LOGC("EphysSocket connected.");
+        CoreServices::sendStatusMessage("Ephys Socket: Socket connected and ready to receive data.");
 
         return true;
     }
@@ -189,6 +200,8 @@ bool EphysSocket::startAcquisition()
 
     total_samples = 0;
     eventState = 0;
+
+    error_flag = false;
 
     startThread();
 
