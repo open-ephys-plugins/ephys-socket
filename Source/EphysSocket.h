@@ -121,9 +121,6 @@ namespace EphysSocketNode
         /** True if socket is connected */
         bool connected = false;
 
-        /** UPD socket object */
-        //std::unique_ptr<DatagramSocket> socket;
-
         /** TCP Socket object */
         std::unique_ptr<StreamingSocket> socket;
 
