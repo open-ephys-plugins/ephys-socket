@@ -250,7 +250,6 @@ void EphysSocket::convertData()
 bool EphysSocket::updateBuffer()
 {
     const int bytes_expected = num_channels * num_samp * element_size + HEADER_SIZE;
-    const int num_expected_packets = 1;
 
     int rc;
     EphysSocketHeader header;
