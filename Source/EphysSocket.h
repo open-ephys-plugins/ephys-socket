@@ -16,8 +16,8 @@ namespace EphysSocketNode
         /** Default parameters */
         const int DEFAULT_PORT = 9001;
         const float DEFAULT_SAMPLE_RATE = 30000.0f;
-        const float DEFAULT_DATA_SCALE = 0.195f;
-        const float DEFAULT_DATA_OFFSET = 32768.0f;
+        const float DEFAULT_DATA_SCALE = 1.0f;  // 0.195f for Intan devices
+        const float DEFAULT_DATA_OFFSET = 0.0f; // 32768.0f for Intant devices 
 
         /** Parameter limits */
         const float MIN_DATA_SCALE = 0.0f;
