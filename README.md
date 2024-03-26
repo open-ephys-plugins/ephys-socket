@@ -2,7 +2,7 @@
 
 ![ephys-socket-screenshot](https://open-ephys.github.io/gui-docs/_images/ephyssocket-01.png)
 
-A simple UDP server for receiving raw matrix data. It can be used to stream data from the `OpenCVMatUDPClient` in [Bonsai](https://bonsai-rx.org).
+A simple TCP client for receiving raw matrix data. It can be used to receive data from a `SendMatOverSocket` node in [Bonsai](https://bonsai-rx.org). More information about the Bonsai node can be found [here](https://open-ephys.github.io/gui-docs/User-Manual/Plugins/Ephys-Socket.html#in-bonsai).
 
 ## Installation
 
@@ -11,6 +11,14 @@ This plugin can be added via the Open Ephys GUI Plugin Installer. To access the 
 ## Usage
 
 Instructions for using the Ephys Socket plugin are available [here](https://open-ephys.github.io/gui-docs/User-Manual/Plugins/Ephys-Socket.html).
+
+## Header
+
+Each packet of data must contain a header with information about the data. Each header must contain six variables in the order listed below, 5 of which use 4 bytes and 1 that uses 2 bytes, for a total of 22 bytes. More detailed information can be found [here](https://open-ephys.github.io/gui-docs/User-Manual/Plugins/Ephys-Socket.html).
+
+```
+| Offset | Number of Bytes | Bit Depth | Element Size | Number of Channels | Number of Bytes |
+```
 
 ## Building from source
 

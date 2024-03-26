@@ -1,29 +1,40 @@
 ﻿<?xml version="1.0" encoding="utf-8"?>
-<WorkflowBuilder Version="2.7.1"
+<WorkflowBuilder Version="2.8.1"
                  xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
-                 xmlns:eph="clr-namespace:Bonsai.Ephys;assembly=Bonsai.Ephys"
+                 xmlns:p1="clr-namespace:OpenEphys.Sockets.Bonsai;assembly=OpenEphys.Sockets.Bonsai"
+                 xmlns:p2="clr-namespace:Bonsai.OpenEphys;assembly=Bonsai.OpenEphys"
+                 xmlns:p3="clr-namespace:OpenCV.Net;assembly=OpenCV.Net"
                  xmlns:dsp="clr-namespace:Bonsai.Dsp;assembly=Bonsai.Dsp"
-                 xmlns:p1="clr-namespace:Bonsai.JonsUtils;assembly=Bonsai.JonsUtils"
                  xmlns="https://bonsai-rx.org/2018/workflow">
   <Workflow>
     <Nodes>
       <Expression xsi:type="Combinator">
-        <Combinator xsi:type="eph:Rhd2000EvalBoard">
-          <eph:BitFileName>rhd2000_usb3.bit</eph:BitFileName>
-          <eph:SampleRate>SampleRate30000Hz</eph:SampleRate>
-          <eph:ExternalFastSettleEnabled>false</eph:ExternalFastSettleEnabled>
-          <eph:LowerBandwidth>0.1</eph:LowerBandwidth>
-          <eph:UpperBandwidth>7500</eph:UpperBandwidth>
-          <eph:DspCutoffFrequency>1</eph:DspCutoffFrequency>
-          <eph:DspEnabled>true</eph:DspEnabled>
-          <eph:CableDelayA xsi:nil="true" />
-          <eph:CableDelayB xsi:nil="true" />
-          <eph:CableDelayC xsi:nil="true" />
-          <eph:CableDelayD xsi:nil="true" />
+        <Combinator xsi:type="p1:TcpServer">
+          <p1:Name>TCP</p1:Name>
+          <p1:Port>9001</p1:Port>
+          <p1:Address>localhost</p1:Address>
+        </Combinator>
+      </Expression>
+      <Expression xsi:type="Combinator">
+        <Combinator xsi:type="p2:AcquisitionBoard">
+          <p2:BoardLeds>true</p2:BoardLeds>
+          <p2:BoardIndex>-1</p2:BoardIndex>
+          <p2:BufferCount>256</p2:BufferCount>
+          <p2:SampleRate>SampleRate30000Hz</p2:SampleRate>
+          <p2:ExternalFastSettleEnabled>false</p2:ExternalFastSettleEnabled>
+          <p2:LowerBandwidth>0.1</p2:LowerBandwidth>
+          <p2:UpperBandwidth>7500</p2:UpperBandwidth>
+          <p2:DspCutoffFrequency>1</p2:DspCutoffFrequency>
+          <p2:DspEnabled>true</p2:DspEnabled>
+          <p2:CableDelayA xsi:nil="true" />
+          <p2:CableDelayB xsi:nil="true" />
+          <p2:CableDelayC xsi:nil="true" />
+          <p2:CableDelayD xsi:nil="true" />
         </Combinator>
       </Expression>
       <Expression xsi:type="MemberSelector">
         <Selector>AmplifierData</Selector>
+        <TypeMapping xsi:type="TypeMapping" TypeArguments="p3:Mat" />
       </Expression>
       <Expression xsi:type="Combinator">
         <Combinator xsi:type="dsp:SelectChannels">
@@ -36,16 +47,15 @@
         </Combinator>
       </Expression>
       <Expression xsi:type="Combinator">
-        <Combinator xsi:type="p1:OpenCVMatUDPClient">
-          <p1:addr>localhost</p1:addr>
-          <p1:port>9001</p1:port>
+        <Combinator xsi:type="p1:SendMatOverSocket">
+          <p1:Connection>TCP</p1:Connection>
         </Combinator>
       </Expression>
     </Nodes>
     <Edges>
-      <Edge From="0" To="1" Label="Source1" />
       <Edge From="1" To="2" Label="Source1" />
       <Edge From="2" To="3" Label="Source1" />
+      <Edge From="3" To="4" Label="Source1" />
     </Edges>
   </Workflow>
 </WorkflowBuilder>
