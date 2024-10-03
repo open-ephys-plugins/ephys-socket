@@ -86,6 +86,8 @@ namespace EphysSocketNode
         const int DEFAULT_TOTAL_SAMPLES = 0;
         const int DEFAULT_EVENT_STATE = 0;
 
+        const int bufferSizeInSeconds = 10;
+
         /** Variables that are part of the incoming header */
         int num_bytes;
         int element_size;
@@ -100,7 +102,7 @@ namespace EphysSocketNode
         bool stopAcquisition()  override;
 
         /** Handles incoming HTTP messages */
-        String handleConfigMessage(String msg) override;
+        String handleConfigMessage(const String& msg) override;
 
         /** Compares a newly parsed header to existing variables */
         bool compareHeaders(EphysSocketHeader header) const;

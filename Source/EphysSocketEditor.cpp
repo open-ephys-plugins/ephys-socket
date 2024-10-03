@@ -13,14 +13,16 @@ EphysSocketEditor::EphysSocketEditor(GenericProcessor* parentNode, EphysSocket *
     desiredWidth = 180;
 
     // Add connect button
-    connectButton = new UtilityButton("CONNECT", Font("Small Text", 12, Font::bold));
+    connectButton = new UtilityButton("CONNECT");
+    connectButton->setFont(FontOptions("Small Text", 12, Font::bold));
     connectButton->setRadius(3.0f);
     connectButton->setBounds(15, 35, 70, 20);
     connectButton->addListener(this);
     addAndMakeVisible(connectButton);
 
     // Add disconnect button
-    disconnectButton = new UtilityButton("DISCONNECT", Font("Small Text", 12, Font::bold));
+    disconnectButton = new UtilityButton("DISCONNECT");
+    disconnectButton->setFont(FontOptions("Small Text", 12, Font::bold));
     disconnectButton->setRadius(3.0f);
     disconnectButton->setBounds(100, 35, 70, 20);
     disconnectButton->addListener(this);
