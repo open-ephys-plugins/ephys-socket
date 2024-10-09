@@ -26,10 +26,10 @@ namespace EphysSocketNode
         /** Button listener callback, called by button when pressed. */
         void buttonClicked(Button* button);
 
-        /** Called by processor graph in beginning of the acqusition, disables editor completly. */
+        /** Called by processor graph in beginning of the acquisition, disables editor completely. */
         void startAcquisition();
 
-        /** Called by processor graph at the end of the acqusition, reenables editor completly. */
+        /** Called by processor graph at the end of the acquisition, reenables editor completely. */
         void stopAcquisition();
 
         /** Called when configuration is saved. Adds editors config to xml. */
@@ -43,33 +43,34 @@ namespace EphysSocketNode
 
     private:
 
-        // Button that tries to connect to server
-        ScopedPointer<UtilityButton> connectButton;
+        // Button that connects/disconnects from/to server
+        std::unique_ptr<UtilityButton> connectButton;
+        std::unique_ptr<UtilityButton> disconnectButton;
+
+        String stringConnect = "CONNECT";
+        String stringDisconnect = "DISCONNECT";
 
         // Changes colors and disables UI elements
         void disableInputs();
-
-        // Button that disconnects from server
-        ScopedPointer<UtilityButton> disconnectButton;
 
         // Changes colors and enables UI elements
         void enableInputs();
 
         // Port
-        ScopedPointer<Label> portLabel;
-        ScopedPointer<Label> portInput;
+        std::unique_ptr<Label> portLabel;
+        std::unique_ptr<Label> portInput;
 
         // Fs
-        ScopedPointer<Label> sampleRateLabel;
-        ScopedPointer<Label> sampleRateInput;
+        std::unique_ptr<Label> sampleRateLabel;
+        std::unique_ptr<Label> sampleRateInput;
 
         // Scale
-        ScopedPointer<Label> scaleLabel;
-        ScopedPointer<Label> scaleInput;
+        std::unique_ptr<Label> scaleLabel;
+        std::unique_ptr<Label> scaleInput;
 
         // Offset
-        ScopedPointer<Label> offsetLabel;
-        ScopedPointer<Label> offsetInput;
+        std::unique_ptr<Label> offsetLabel;
+        std::unique_ptr<Label> offsetInput;
 
         // Parent node
         EphysSocket* node;
