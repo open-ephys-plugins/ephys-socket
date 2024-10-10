@@ -2,18 +2,22 @@ name: Windows
 
 on: 
   push:
+    branches: [main]
+  pull_request:
+
+env:
+  artifactoryApiKey: ${{ secrets.artifactoryApiKey }}
+  build_dir: "Build/Release"
+  package: EphysSocket-windows
 
 jobs:
-
   build-windows:
-
-    runs-on: ${{ matrix.os }}
-    strategy:
-      matrix:
-        os: [windows-2019]
+    runs-on: [windows-2019]
     
     steps:
-    - uses: actions/checkout@v1
+    - name: Checkout
+      uses: actions/checkout@v4
+
     - name: setup
       env: 
         repo: open-ephys-gui
@@ -27,28 +31,25 @@ jobs:
         curl -L https://openephysgui.jfrog.io/artifactory/Libraries/open-ephys-lib-v0.6.0.zip --output open-ephys-lib.zip 
         unzip open-ephys-lib.zip
       shell: bash
+
     - name: configure
       run: |
         cd Build
         cmake -G "Visual Studio 16 2019" -A x64 .. 
       shell: bash
+      
     - name: Add msbuild to PATH
-      uses: microsoft/setup-msbuild@v1.0.2
+      uses: microsoft/setup-msbuild@v2
+
     - name: build-plugin
       id: build
       run: |
         cd Build
         msbuild INSTALL.vcxproj -p:Configuration=Release -p:Platform=x64
       shell: cmd
-# TODO: Perform some basic testing before publishing...
-#    - name: test
-#      run: cd build && ctest
+
     - name: deploy
       if: github.ref == 'refs/heads/main' && steps.build.outcome == 'success'
-      env:
-        artifactoryApiKey: ${{ secrets.artifactoryApiKey }}
-        build_dir: "Build/Release"
-        package: EphysSocket-windows
       run: |
         plugin_api=$(grep -rnw ../../plugin-GUI/Source -e '#define PLUGIN_API_VER' | grep -Eo "[0-9]*" | tail -1)
         tag=$(grep -w Source/OpenEphysLib.cpp -e 'info->libVersion' | grep -Eo "[0-9]+.[0-9]+.[0-9]+")
