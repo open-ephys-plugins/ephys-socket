@@ -17,7 +17,7 @@ namespace EphysSocketNode
         const int DEFAULT_PORT = 9001;
         const float DEFAULT_SAMPLE_RATE = 30000.0f;
         const float DEFAULT_DATA_SCALE = 1.0f;  // 0.195f for Intan devices
-        const float DEFAULT_DATA_OFFSET = 0.0f; // 32768.0f for Intant devices 
+        const float DEFAULT_DATA_OFFSET = 0.0f; // 32768.0f for Intan devices 
 
         /** Parameter limits */
         const float MIN_DATA_SCALE = 0.0f;
@@ -59,7 +59,10 @@ namespace EphysSocketNode
         void disconnectSocket();
 
         /** Attempts to connect to the socket */
-        bool tryToConnect();
+        bool connectSocket(bool printOutput = true);
+
+        /** Attempts to reconnect the socket during acquisition if no packets are received for a period of time */
+        bool reconnectSocket();
 
         /** Returns if any errors were thrown during acquisition, such as invalid headers or unable to read from socket */
         bool errorFlag();
@@ -125,8 +128,10 @@ namespace EphysSocketNode
         std::vector<std::byte> read_buffer;
         std::vector<float> convbuf;
 
-        /** Booleans for handling error states in EphysSocketEditor */
+        /** Boolean for handling error states in EphysSocketEditor */
         bool error_flag;
+
+        std::time_t lastPacketReceived;
 
         Array<int64> sampleNumbers;
         Array<double> timestamps;

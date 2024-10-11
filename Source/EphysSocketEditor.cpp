@@ -195,7 +195,7 @@ void EphysSocketEditor::buttonClicked(Button* button)
     {
         node->port = portInput->getText().getIntValue();
         
-        if (node->tryToConnect())
+        if (node->connectSocket())
         {
             disableInputs();
         }
