@@ -13,13 +13,15 @@ EphysSocketEditor::EphysSocketEditor(GenericProcessor* parentNode, EphysSocket* 
 	desiredWidth = 180;
 
 	// Add connect button
-	connectButton = std::make_unique<UtilityButton>(stringConnect, Font("Small Text", 12, Font::bold));
+	connectButton = std::make_unique<UtilityButton>(stringConnect);
+	connectButton->setFont(FontOptions("Small Text", 12, Font::bold));
 	connectButton->setRadius(3.0f);
 	connectButton->setBounds(15, 35, 70, 20);
 	connectButton->addListener(this);
 	addAndMakeVisible(connectButton.get());
 
-	disconnectButton = std::make_unique<UtilityButton>(stringDisconnect, Font("Small Text", 12, Font::bold));
+	disconnectButton = std::make_unique<UtilityButton>(stringDisconnect);
+	disconnectButton->setFont(FontOptions("Small Text", 12, Font::bold));
 	disconnectButton->setRadius(3.0f);
 	disconnectButton->setBounds(15, 35, 70, 20);
 	disconnectButton->addListener(this);
@@ -28,13 +30,13 @@ EphysSocketEditor::EphysSocketEditor(GenericProcessor* parentNode, EphysSocket* 
 
 	// Port
 	portLabel = std::make_unique<Label>("Port", "Port");
-	portLabel->setFont(Font("Small Text", 10, Font::plain));
+	portLabel->setFont(FontOptions("Small Text", 10, Font::plain));
 	portLabel->setBounds(10, 63, 70, 8);
 	portLabel->setColour(Label::textColourId, Colours::darkgrey);
 	addAndMakeVisible(portLabel.get());
 
 	portInput = std::make_unique<Label>("Port", String(node->port));
-	portInput->setFont(Font("Small Text", 10, Font::plain));
+	portInput->setFont(FontOptions("Small Text", 10, Font::plain));
 	portInput->setColour(Label::backgroundColourId, Colours::lightgrey);
 	portInput->setEditable(true);
 	portInput->addListener(this);
@@ -43,13 +45,13 @@ EphysSocketEditor::EphysSocketEditor(GenericProcessor* parentNode, EphysSocket* 
 
 	// Frequency
 	sampleRateLabel = std::make_unique<Label>("FREQ (HZ)", "Freq (Hz)");
-	sampleRateLabel->setFont(Font("Small Text", 10, Font::plain));
+	sampleRateLabel->setFont(FontOptions("Small Text", 10, Font::plain));
 	sampleRateLabel->setBounds(10, 98, 85, 8);
 	sampleRateLabel->setColour(Label::textColourId, Colours::darkgrey);
 	addAndMakeVisible(sampleRateLabel.get());
 
 	sampleRateInput = std::make_unique<Label>("Fs (Hz)", String((int)node->sample_rate));
-	sampleRateInput->setFont(Font("Small Text", 10, Font::plain));
+	sampleRateInput->setFont(FontOptions("Small Text", 10, Font::plain));
 	sampleRateInput->setBounds(15, 108, 70, 15);
 	sampleRateInput->setEditable(true);
 	sampleRateInput->setColour(Label::backgroundColourId, Colours::lightgrey);
@@ -58,13 +60,13 @@ EphysSocketEditor::EphysSocketEditor(GenericProcessor* parentNode, EphysSocket* 
 
 	// Scale
 	scaleLabel = std::make_unique<Label>("Scale", "Scale");
-	scaleLabel->setFont(Font("Small Text", 10, Font::plain));
+	scaleLabel->setFont(FontOptions("Small Text", 10, Font::plain));
 	scaleLabel->setBounds(95, 63, 85, 8);
 	scaleLabel->setColour(Label::textColourId, Colours::darkgrey);
 	addAndMakeVisible(scaleLabel.get());
 
 	scaleInput = std::make_unique<Label>("Scale", String(node->data_scale));
-	scaleInput->setFont(Font("Small Text", 10, Font::plain));
+	scaleInput->setFont(FontOptions("Small Text", 10, Font::plain));
 	scaleInput->setBounds(100, 73, 70, 15);
 	scaleInput->setEditable(true);
 	scaleInput->setColour(Label::backgroundColourId, Colours::lightgrey);
@@ -73,13 +75,13 @@ EphysSocketEditor::EphysSocketEditor(GenericProcessor* parentNode, EphysSocket* 
 
 	// Offset
 	offsetLabel = std::make_unique<Label>("Offset", "Offset");
-	offsetLabel->setFont(Font("Small Text", 10, Font::plain));
+	offsetLabel->setFont(FontOptions("Small Text", 10, Font::plain));
 	offsetLabel->setBounds(95, 98, 85, 8);
 	offsetLabel->setColour(Label::textColourId, Colours::darkgrey);
 	addAndMakeVisible(offsetLabel.get());
 
 	offsetInput = std::make_unique<Label>("Offset", String(node->data_offset));
-	offsetInput->setFont(Font("Small Text", 10, Font::plain));
+	offsetInput->setFont(FontOptions("Small Text", 10, Font::plain));
 	offsetInput->setBounds(100, 108, 70, 15);
 	offsetInput->setEditable(true);
 	offsetInput->setColour(Label::backgroundColourId, Colours::lightgrey);
@@ -189,7 +191,7 @@ void EphysSocketEditor::buttonClicked(Button* button)
 	{
 		node->port = portInput->getText().getIntValue();
 
-		if (node->tryToConnect())
+		if (node->connectSocket())
 		{
 			disableInputs();
 		}

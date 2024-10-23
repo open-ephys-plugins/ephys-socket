@@ -499,4 +499,6 @@ String EphysSocket::handleConfigMessage(const String& msg)
 
 		return "Command not recognized.";
 	}
+
+	return "Empty message";
 }
