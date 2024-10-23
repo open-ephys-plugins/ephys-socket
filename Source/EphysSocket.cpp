@@ -31,7 +31,7 @@ EphysSocket::EphysSocket(SourceNode* sn) : DataThread(sn)
 
 	error_flag = false;
 
-	sourceBuffers.add(new DataBuffer(num_channels, 10000)); // start with 2 channels and automatically resize
+	sourceBuffers.add(new DataBuffer(num_channels, sample_rate * bufferSizeInSeconds)); // start with 2 channels and automatically resize
 }
 
 std::unique_ptr<GenericEditor> EphysSocket::createEditor(SourceNode* sn)
@@ -154,7 +154,7 @@ bool EphysSocket::errorFlag()
 
 void EphysSocket::resizeBuffers()
 {
-	sourceBuffers[0]->resize(num_channels, 10000);
+	sourceBuffers[0]->resize(num_channels, sample_rate * bufferSizeInSeconds);
 	read_buffer.resize(num_channels * num_samp * element_size + HEADER_SIZE);
 	convbuf.resize(num_channels * num_samp);
 	sampleNumbers.resize(num_samp);
@@ -189,7 +189,7 @@ void EphysSocket::updateSettings(OwnedArray<ContinuousChannel>* continuousChanne
 	};
 
 	sourceStreams->add(new DataStream(settings));
-	sourceBuffers[0]->resize(num_channels, 10000);
+	sourceBuffers[0]->resize(num_channels, sample_rate * bufferSizeInSeconds);
 
 	for (int ch = 0; ch < num_channels; ch++)
 	{
@@ -272,11 +272,8 @@ void EphysSocket::convertData()
 {
 	T* buf = (T*)(read_buffer.data() + HEADER_SIZE);
 
-	int k = 0;
-	for (int i = 0; i < num_samp; i++) {
-		for (int j = 0; j < num_channels; j++) {
-			convbuf[k++] = data_scale * ((float)(buf[j * num_samp + i]) - data_offset);
-		}
+	for (int i = 0; i < num_samp * num_channels; i++) {
+		convbuf[i] = data_scale * ((float)(buf[i]) - data_offset);
 	}
 }
 
@@ -395,15 +392,14 @@ bool EphysSocket::updateBuffer()
 		sampleNumbers.getRawDataPointer(),
 		timestamps.getRawDataPointer(),
 		ttlEventWords.getRawDataPointer(),
-		num_samp,
-		1);
+		num_samp);
 
 	lastPacketReceived = time(nullptr);
 
 	return true;
 }
 
-String EphysSocket::handleConfigMessage(String msg)
+String EphysSocket::handleConfigMessage(const String& msg)
 {
 	// Available commands:
 	// ES INFO - Returns info on current variables that can be modified over HTTP
