@@ -4,10 +4,10 @@
 #include <DataThreadHeaders.h>
 
 #include "EphysSocketHeader.h"
+#include "Socket.h"
 
 namespace EphysSocketNode
 {
-
     class EphysSocket : public DataThread
     {
 
@@ -61,42 +61,23 @@ namespace EphysSocketNode
         /** Attempts to connect to the socket */
         bool connectSocket(bool printOutput = true);
 
-        /** Attempts to reconnect the socket during acquisition if no packets are received for a period of time */
-        bool reconnectSocket();
-
         /** Returns if any errors were thrown during acquisition, such as invalid headers or unable to read from socket */
         bool errorFlag();
 
         /** Network stream parameters (must match features of incoming data) */
         int port;
         float sample_rate;
-        int num_samp;
-        int num_channels;
-        Depth depth;
         float data_scale;
         float data_offset;
 
     private:
 
-        /** Default socket parameters */
-        const int DEFAULT_NUM_SAMPLES = 256;
-        const int DEFAULT_NUM_CHANNELS = 64;
-        const Depth DEFAULT_DEPTH = U16;
-        const int DEFAULT_ELEMENT_SIZE = 2;
-        const int DEFAULT_NUM_BYTES = 32678; // NB: 256 * 64 * 2
-
-        /** Default parameters */
-        const int DEFAULT_TOTAL_SAMPLES = 0;
-        const int DEFAULT_EVENT_STATE = 0;
-
         const int bufferSizeInSeconds = 10;
-
-        /** Variables that are part of the incoming header */
-        int num_bytes;
-        int element_size;
 
         /** Receives data from network and pushes it to the DataBuffer */
         bool updateBuffer() override;
+
+        bool isReady() override;
 
         /** Resets variables and starts thread*/
         bool startAcquisition() override;
@@ -107,12 +88,9 @@ namespace EphysSocketNode
         /** Handles incoming HTTP messages */
         String handleConfigMessage(const String& msg) override;
 
-        /** Compares a newly parsed header to existing variables */
-        bool compareHeaders(EphysSocketHeader header) const;
-
         /** Template function to convert data */
         template <typename T>
-        void convertData();
+        void convertData(std::vector<std::byte> buffer);
 
         /** Sample index counter */
         int64 total_samples;
@@ -120,20 +98,9 @@ namespace EphysSocketNode
         /** Local event state variable */
         uint64 eventState;
 
-        /** True if socket is connected */
-        bool connected = false;
+        Socket socket;
 
-        /** TCP Socket object */
-        std::unique_ptr<StreamingSocket> socket;
-
-        /** Internal buffers */
-        std::vector<std::byte> read_buffer;
         std::vector<float> convbuf;
-
-        /** Boolean for handling error states in EphysSocketEditor */
-        bool error_flag;
-
-        std::time_t lastPacketReceived;
 
         Array<int64> sampleNumbers;
         Array<double> timestamps;

@@ -41,6 +41,12 @@ namespace EphysSocketNode
         /** Called when label is changed */
         void labelTextChanged(Label* label);
 
+        // Changes colors and disables UI elements
+        void disableInputs();
+
+        // Changes colors and enables UI elements
+        void enableInputs();
+
     private:
 
         // Button that connects/disconnects from/to server
@@ -49,12 +55,6 @@ namespace EphysSocketNode
 
         String stringConnect = "CONNECT";
         String stringDisconnect = "DISCONNECT";
-
-        // Changes colors and disables UI elements
-        void disableInputs();
-
-        // Changes colors and enables UI elements
-        void enableInputs();
 
         // Port
         std::unique_ptr<Label> portLabel;
