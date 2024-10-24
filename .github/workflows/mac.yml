@@ -17,11 +17,15 @@ jobs:
     steps:
     - name: Checkout
       uses: actions/checkout@v4
+      
+    - name: set env vars
+      run: |
+        echo "GUI_BRANCH=development-juce8" >> "$GITHUB_ENV"
 
     - name: setup
       run: |
         cd ../..
-        git clone https://github.com/open-ephys/plugin-GUI.git --branch main
+        git clone https://github.com/open-ephys/plugin-GUI.git --branch $GUI_BRANCH
         cd plugin-GUI/Build && cmake -G "Xcode" ..
 
     - name: build
@@ -32,7 +36,7 @@ jobs:
         xcodebuild -configuration Release
 
     - name: deploy
-      if: github.ref == 'refs/heads/main' && steps.build.outcome == 'success'
+      if: github.ref == 'refs/heads/juce8' && steps.build.outcome == 'success'
       run: |
         plugin_api=$(grep -rnw ../../plugin-GUI/Source -e '#define PLUGIN_API_VER' | grep -Eo "[0-9]" | tail -1)
         tag=$(grep -w Source/OpenEphysLib.cpp -e 'info->libVersion' | grep -Eo "[0-9]+.[0-9]+.[0-9]+")

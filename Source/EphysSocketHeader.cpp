@@ -31,3 +31,13 @@ EphysSocketHeader::EphysSocketHeader(std::vector<std::byte>& header_bytes, int _
     num_channels = (int)header_bytes[_offset + 17] << 24 | (int)header_bytes[_offset + 16] << 16 | (int)header_bytes[_offset + 15] << 8 | (int)header_bytes[_offset + 14];
     num_samp = (int)header_bytes[_offset + 21] << 24 | (int)header_bytes[_offset + 20] << 16 | (int)header_bytes[_offset + 19] << 8 | (int)header_bytes[_offset + 18];
 }
+
+EphysSocketHeader::EphysSocketHeader(int _num_bytes, Depth _depth, int _element_size, int _num_samp, int _num_channels)
+{
+    offset = 0;
+    num_bytes = _num_bytes;
+    depth = _depth;
+    element_size = _element_size;
+    num_samp = _num_samp;
+    num_channels = _num_channels;
+}
