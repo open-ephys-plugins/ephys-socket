@@ -90,18 +90,21 @@ bool SocketThread::connectSocket(int port, bool printOutput)
 			rc = socket->read(header_bytes.data(), HEADER_SIZE, false);
 
 			if (rc == HEADER_SIZE) break;
-			else sleep(50);
+			else sleep(100);
 		}
 
 		if (rc != HEADER_SIZE)
 		{
-			disconnectSocket();
-
 			if (printOutput)
 			{
 				LOGC("EphysSocket failed to connect; could not read header from stream.");
 				CoreServices::sendStatusMessage("Ephys Socket: Could not read stream.");
 			}
+
+			socket->close();
+			socket.reset();
+
+			connected = false;
 
 			return false;
 		}
