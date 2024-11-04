@@ -18,7 +18,9 @@ namespace EphysSocketNode
 
 		EphysSocketHeader(std::vector<std::byte>& header_bytes);
 
-		EphysSocketHeader(std::vector<std::byte>& header_bytes, int offset);
+		EphysSocketHeader(std::vector<std::byte>& header_bytes, int _offset);
+
+		EphysSocketHeader(int _num_bytes, Depth _depth, int _element_size, int _num_samp, int _num_channels);
 
 		int offset;
 		int num_bytes;
