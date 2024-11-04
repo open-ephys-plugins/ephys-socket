@@ -12,30 +12,33 @@ env:
 
 jobs:
   build-windows:
-    runs-on: [windows-2019]
+    runs-on: [windows-latest]
     
     steps:
     - name: Checkout
       uses: actions/checkout@v4
+      
+    - name: set env vars
+      run: |
+        echo "GUI_BRANCH=development-juce8" >> "$GITHUB_ENV"
+        echo "GUI_LIB_VERSION=v1.0.0-dev" >> "$GITHUB_ENV"
+      shell: bash
 
     - name: setup
-      env: 
-        repo: open-ephys-gui
-        package: "open-ephys-lib"
       run: |
         cd ../..
-        git clone https://github.com/open-ephys/plugin-GUI.git --branch main
+        git clone https://github.com/open-ephys/plugin-GUI.git --branch $GUI_BRANCH
         cd plugin-GUI/Build
-        cmake -G "Visual Studio 16 2019" -A x64 .. 
+        cmake -G "Visual Studio 17 2022" -A x64 .. 
         mkdir Release && cd Release
-        curl -L https://openephysgui.jfrog.io/artifactory/Libraries/open-ephys-lib-v0.6.0.zip --output open-ephys-lib.zip 
+        curl -L https://openephysgui.jfrog.io/artifactory/Libraries/open-ephys-lib-$GUI_LIB_VERSION.zip --output open-ephys-lib.zip 
         unzip open-ephys-lib.zip
       shell: bash
 
     - name: configure
       run: |
         cd Build
-        cmake -G "Visual Studio 16 2019" -A x64 .. 
+        cmake -G "Visual Studio 17 2022" -A x64 .. 
       shell: bash
       
     - name: Add msbuild to PATH
@@ -49,7 +52,7 @@ jobs:
       shell: cmd
 
     - name: deploy
-      if: github.ref == 'refs/heads/main' && steps.build.outcome == 'success'
+      if: github.ref == 'refs/heads/juce8' && steps.build.outcome == 'success'
       run: |
         plugin_api=$(grep -rnw ../../plugin-GUI/Source -e '#define PLUGIN_API_VER' | grep -Eo "[0-9]*" | tail -1)
         tag=$(grep -w Source/OpenEphysLib.cpp -e 'info->libVersion' | grep -Eo "[0-9]+.[0-9]+.[0-9]+")
