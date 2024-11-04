@@ -2,7 +2,7 @@ name: mac
 
 on: 
   push:
-    branches: [main]
+    branches: [main,juce8]
   pull_request:
 
 env:
