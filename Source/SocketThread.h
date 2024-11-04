@@ -32,13 +32,13 @@
 
 namespace EphysSocketNode
 {
-	class Socket : public Thread
+	class SocketThread : public Thread
 	{
 	public:
 
-		Socket(String name);
+		SocketThread(String name);
 
-		~Socket();
+		~SocketThread();
 
 		/** Starts probe data streaming */
 		void startAcquisition();
@@ -105,7 +105,7 @@ namespace EphysSocketNode
 
 		int previousPort;
 
-		JUCE_DECLARE_NON_COPYABLE_WITH_LEAK_DETECTOR(Socket);
+		JUCE_DECLARE_NON_COPYABLE_WITH_LEAK_DETECTOR(SocketThread);
 	};
 }
 

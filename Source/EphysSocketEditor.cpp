@@ -156,11 +156,9 @@ void EphysSocketEditor::stopAcquisition()
 		node->disconnectSocket();
 		enableInputs();
 	}
-	else
-	{
-		disconnectButton->setEnabled(true);
-		disconnectButton->setAlpha(1.0f);
-	}
+
+	disconnectButton->setEnabled(true);
+	disconnectButton->setAlpha(1.0f);
 }
 
 void EphysSocketEditor::disableInputs()

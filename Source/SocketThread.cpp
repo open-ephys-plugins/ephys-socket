@@ -2,11 +2,11 @@
 #include <Windows.h>
 #endif
 
-#include "Socket.h"
+#include "SocketThread.h"
 
 using namespace EphysSocketNode;
 
-Socket::Socket(String name)
+SocketThread::SocketThread(String name)
 	: Thread(name), editor(NULL)
 {
 	lastPacketReceived = time(nullptr);
@@ -27,7 +27,7 @@ Socket::Socket(String name)
 	acquiring = false;
 }
 
-Socket::~Socket()
+SocketThread::~SocketThread()
 {
 	stopThread(500);
 
@@ -38,22 +38,22 @@ Socket::~Socket()
 	}
 }
 
-void Socket::setEditor(EphysSocketEditor* ed)
+void SocketThread::setEditor(EphysSocketEditor* ed)
 {
 	editor = ed;
 }
 
-void Socket::startAcquisition()
+void SocketThread::startAcquisition()
 {
 	acquiring = true;
 }
 
-void Socket::stopAcquisition()
+void SocketThread::stopAcquisition()
 {
 	acquiring = false;
 }
 
-bool Socket::connectSocket(int port, bool printOutput)
+bool SocketThread::connectSocket(int port, bool printOutput)
 {
 	if (port == -1)
 	{
@@ -149,7 +149,7 @@ bool Socket::connectSocket(int port, bool printOutput)
 	}
 }
 
-void Socket::disconnectSocket()
+void SocketThread::disconnectSocket()
 {
 	std::lock_guard<std::mutex> lock(socketMutex);
 
@@ -167,17 +167,17 @@ void Socket::disconnectSocket()
 	shouldReconnect = false;
 }
 
-bool Socket::isConnected()
+bool SocketThread::isConnected()
 {
 	return connected;
 }
 
-bool Socket::isError() const
+bool SocketThread::isError() const
 {
 	return error_flag;
 }
 
-bool Socket::compareHeaders(EphysSocketHeader header) const
+bool SocketThread::compareHeaders(EphysSocketHeader header) const
 {
 	if (header.depth != depth ||
 		header.element_size != element_size ||
@@ -190,7 +190,7 @@ bool Socket::compareHeaders(EphysSocketHeader header) const
 	return true;
 }
 
-void Socket::attemptToReconnect()
+void SocketThread::attemptToReconnect()
 {
 	auto previousHeader = EphysSocketHeader(num_bytes, depth, element_size, num_samp, num_channels);
 
@@ -213,7 +213,7 @@ void Socket::attemptToReconnect()
 	}
 }
 
-void Socket::run()
+void SocketThread::run()
 {
 	while (!threadShouldExit())
 	{

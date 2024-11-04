@@ -4,7 +4,7 @@
 #include <DataThreadHeaders.h>
 
 #include "EphysSocketHeader.h"
-#include "Socket.h"
+#include "SocketThread.h"
 
 namespace EphysSocketNode
 {
@@ -98,7 +98,7 @@ namespace EphysSocketNode
         /** Local event state variable */
         uint64 eventState;
 
-        Socket socket;
+        SocketThread socket;
 
         std::vector<float> convbuf;
 
