@@ -11,46 +11,43 @@
 
 namespace EphysSocketNode
 {
-    class EphysSocket;
+class EphysSocket;
 
-    class EphysSocketEditor : public GenericEditor, 
-                              public Button::Listener
-    {
+class EphysSocketEditor : public GenericEditor,
+                          public Button::Listener
+{
+public:
+    /** Constructor */
+    EphysSocketEditor (GenericProcessor* parentNode, EphysSocket* node);
 
-    public:
+    /** Button listener callback, called by button when pressed. */
+    void buttonClicked (Button* button);
 
-        /** Constructor */
-        EphysSocketEditor(GenericProcessor* parentNode, EphysSocket *node);
+    /** Called by processor graph in beginning of the acquisition, disables editor completely. */
+    void startAcquisition();
 
-        /** Button listener callback, called by button when pressed. */
-        void buttonClicked(Button* button);
+    /** Called by processor graph at the end of the acquisition, reenables editor completely. */
+    void stopAcquisition();
 
-        /** Called by processor graph in beginning of the acquisition, disables editor completely. */
-        void startAcquisition();
+    /** Called by the processor when the socket is connected. */
+    void connected();
 
-        /** Called by processor graph at the end of the acquisition, reenables editor completely. */
-        void stopAcquisition();
+    /** Called by the processor when the socket is disconnected. */
+    void disconnected();
 
-        /** Called by the processor when the socket is connected. */
-        void connected();
+private:
+    // Button that connects/disconnects from/to server
+    std::unique_ptr<UtilityButton> connectButton;
+    std::unique_ptr<UtilityButton> disconnectButton;
 
-        /** Called by the processor when the socket is disconnected. */
-        void disconnected();
+    String stringConnect = "CONNECT";
+    String stringDisconnect = "DISCONNECT";
 
-    private:
+    // Parent node
+    EphysSocket* node;
 
-        // Button that connects/disconnects from/to server
-        std::unique_ptr<UtilityButton> connectButton;
-        std::unique_ptr<UtilityButton> disconnectButton;
-
-        String stringConnect = "CONNECT";
-        String stringDisconnect = "DISCONNECT";
-
-        // Parent node
-        EphysSocket* node;
-
-        JUCE_DECLARE_NON_COPYABLE_WITH_LEAK_DETECTOR(EphysSocketEditor);
-    };
-}
+    JUCE_DECLARE_NON_COPYABLE_WITH_LEAK_DETECTOR (EphysSocketEditor);
+};
+} // namespace EphysSocketNode
 
 #endif

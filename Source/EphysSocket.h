@@ -8,111 +8,108 @@
 
 namespace EphysSocketNode
 {
-    class EphysSocket : public DataThread
-    {
+class EphysSocket : public DataThread
+{
+public:
+    /** Default parameters */
+    const int DEFAULT_PORT = 9001;
+    const float DEFAULT_SAMPLE_RATE = 30000.0f;
+    const float DEFAULT_DATA_SCALE = 1.0f; // 0.195f for Intan devices
+    const float DEFAULT_DATA_OFFSET = 0.0f; // 32768.0f for Intan devices
 
-    public:
+    /** Parameter limits */
+    const float MIN_DATA_SCALE = 0.0f;
+    const float MAX_DATA_SCALE = 9999.9f;
+    const float MIN_DATA_OFFSET = 0;
+    const float MAX_DATA_OFFSET = 65536;
+    const float MIN_PORT = 1023;
+    const float MAX_PORT = 65535;
+    const float MIN_SAMPLE_RATE = 0;
+    const float MAX_SAMPLE_RATE = 50000.0f;
 
-        /** Default parameters */
-        const int DEFAULT_PORT = 9001;
-        const float DEFAULT_SAMPLE_RATE = 30000.0f;
-        const float DEFAULT_DATA_SCALE = 1.0f;  // 0.195f for Intan devices
-        const float DEFAULT_DATA_OFFSET = 0.0f; // 32768.0f for Intan devices 
+    /** Constructor */
+    EphysSocket (SourceNode* sn);
 
-        /** Parameter limits */
-        const float MIN_DATA_SCALE = 0.0f;
-        const float MAX_DATA_SCALE = 9999.9f;
-        const float MIN_DATA_OFFSET = 0;
-        const float MAX_DATA_OFFSET = 65536;
-        const float MIN_PORT = 1023;
-        const float MAX_PORT = 65535;
-        const float MIN_SAMPLE_RATE = 0;
-        const float MAX_SAMPLE_RATE = 50000.0f;
+    /** Destructor */
+    ~EphysSocket();
 
-        /** Constructor */
-        EphysSocket(SourceNode* sn);
-        
-        /** Destructor */
-        ~EphysSocket();
+    /** Creates custom editor */
+    std::unique_ptr<GenericEditor> createEditor (SourceNode* sn);
 
-        /** Creates custom editor */
-        std::unique_ptr<GenericEditor> createEditor(SourceNode* sn);
+    /** Create the DataThread object*/
+    static DataThread* createDataThread (SourceNode* sn);
 
-        /** Create the DataThread object*/
-        static DataThread* createDataThread(SourceNode* sn);
+    /** Registers the parameters for the DataThread */
+    void registerParameters() override;
 
-        /** Registers the parameters for the DataThread */
-        void registerParameters() override;
+    /** Returns true if socket is connected */
+    bool foundInputSource() override;
 
-        /** Returns true if socket is connected */
-        bool foundInputSource() override;
+    /** Sets info about available channels */
+    void updateSettings (OwnedArray<ContinuousChannel>* continuousChannels,
+                         OwnedArray<EventChannel>* eventChannels,
+                         OwnedArray<SpikeChannel>* spikeChannels,
+                         OwnedArray<DataStream>* sourceStreams,
+                         OwnedArray<DeviceInfo>* devices,
+                         OwnedArray<ConfigurationObject>* configurationObjects);
 
-        /** Sets info about available channels */
-        void updateSettings(OwnedArray<ContinuousChannel>* continuousChannels,
-            OwnedArray<EventChannel>* eventChannels,
-            OwnedArray<SpikeChannel>* spikeChannels,
-            OwnedArray<DataStream>* sourceStreams,
-            OwnedArray<DeviceInfo>* devices,
-            OwnedArray<ConfigurationObject>* configurationObjects);
+    /** Handles parameter value changes */
+    void parameterValueChanged (Parameter* parameter) override;
 
-        /** Handles parameter value changes */
-        void parameterValueChanged(Parameter* parameter) override;
+    /** Resizes buffers when input parameters are changed*/
+    void resizeBuffers();
 
-        /** Resizes buffers when input parameters are changed*/
-        void resizeBuffers();
+    /** Disconnects the socket */
+    void disconnectSocket();
 
-        /** Disconnects the socket */
-        void disconnectSocket();
+    /** Attempts to connect to the socket */
+    bool connectSocket (bool printOutput = true);
 
-        /** Attempts to connect to the socket */
-        bool connectSocket(bool printOutput = true);
+    /** Returns if any errors were thrown during acquisition, such as invalid headers or unable to read from socket */
+    bool errorFlag();
 
-        /** Returns if any errors were thrown during acquisition, such as invalid headers or unable to read from socket */
-        bool errorFlag();
+    /** Network stream parameters (must match features of incoming data) */
+    int port;
+    float sample_rate;
+    float data_scale;
+    float data_offset;
 
-        /** Network stream parameters (must match features of incoming data) */
-        int port;
-        float sample_rate;
-        float data_scale;
-        float data_offset;
+private:
+    const int bufferSizeInSeconds = 10;
 
-    private:
+    /** Receives data from network and pushes it to the DataBuffer */
+    bool updateBuffer() override;
 
-        const int bufferSizeInSeconds = 10;
+    bool isReady() override;
 
-        /** Receives data from network and pushes it to the DataBuffer */
-        bool updateBuffer() override;
+    /** Resets variables and starts thread*/
+    bool startAcquisition() override;
 
-        bool isReady() override;
+    /** Stops thread */
+    bool stopAcquisition() override;
 
-        /** Resets variables and starts thread*/
-        bool startAcquisition() override;
+    /** Handles incoming HTTP messages */
+    String handleConfigMessage (const String& msg) override;
 
-        /** Stops thread */
-        bool stopAcquisition()  override;
+    /** Template function to convert data */
+    template <typename T>
+    void convertData (std::vector<std::byte> buffer);
 
-        /** Handles incoming HTTP messages */
-        String handleConfigMessage(const String& msg) override;
+    /** Sample index counter */
+    int64 total_samples;
 
-        /** Template function to convert data */
-        template <typename T>
-        void convertData(std::vector<std::byte> buffer);
+    /** Local event state variable */
+    uint64 eventState;
 
-        /** Sample index counter */
-        int64 total_samples;
-        
-        /** Local event state variable */
-        uint64 eventState;
+    SocketThread socket;
 
-        SocketThread socket;
+    std::vector<float> convbuf;
 
-        std::vector<float> convbuf;
+    Array<int64> sampleNumbers;
+    Array<double> timestamps;
+    Array<uint64> ttlEventWords;
 
-        Array<int64> sampleNumbers;
-        Array<double> timestamps;
-        Array<uint64> ttlEventWords;
-
-        JUCE_DECLARE_NON_COPYABLE_WITH_LEAK_DETECTOR(EphysSocket);
-    };
-}
+    JUCE_DECLARE_NON_COPYABLE_WITH_LEAK_DETECTOR (EphysSocket);
+};
+} // namespace EphysSocketNode
 #endif
