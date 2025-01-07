@@ -26,17 +26,18 @@
 
 #include <DataThreadHeaders.h>
 #include "EphysSocketHeader.h"
-#include "EphysSocketEditor.h"
 
 #include <atomic>
 
 namespace EphysSocketNode
 {
+	class EphysSocket;
+	
 	class SocketThread : public Thread
 	{
 	public:
 
-		SocketThread(String name);
+		SocketThread(String name, EphysSocket* processor);
 
 		~SocketThread();
 
@@ -56,8 +57,6 @@ namespace EphysSocketNode
 		bool isError() const;
 
 		bool isConnected();
-
-		void setEditor(EphysSocketEditor* ed);
 
 		Array<std::vector<std::byte>, CriticalSection, 10> data;
 
@@ -85,7 +84,7 @@ namespace EphysSocketNode
 		void attemptToReconnect();
 
 		/** Pointer to the editor */
-		EphysSocketEditor* editor;
+		EphysSocket* processor;
 
 		/** TCP Socket object */
 		std::unique_ptr<StreamingSocket> socket;

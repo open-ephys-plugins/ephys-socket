@@ -3,11 +3,12 @@
 #endif
 
 #include "SocketThread.h"
+#include "EphysSocket.h"
 
 using namespace EphysSocketNode;
 
-SocketThread::SocketThread(String name)
-	: Thread(name), editor(NULL)
+SocketThread::SocketThread(String name, EphysSocket* processor_)
+	: Thread(name), processor(processor_)
 {
 	lastPacketReceived = time(nullptr);
 
@@ -36,11 +37,6 @@ SocketThread::~SocketThread()
 		socket->close();
 		socket.reset();
 	}
-}
-
-void SocketThread::setEditor(EphysSocketEditor* ed)
-{
-	editor = ed;
 }
 
 void SocketThread::startAcquisition()
@@ -77,7 +73,7 @@ bool SocketThread::connectSocket(int port, bool printOutput)
 	error_flag = false;
 
 	socket = std::make_unique<StreamingSocket>();
-	connected = socket->connect("localhost", port, 100);
+	connected = socket->connect("localhost", port);
 
 	if (connected)
 	{
@@ -97,7 +93,7 @@ bool SocketThread::connectSocket(int port, bool printOutput)
 		{
 			if (printOutput)
 			{
-				LOGC("EphysSocket failed to connect; could not read header from stream.");
+				LOGC("EphysSocket failed to connect; could not read header from stream. Bytes read: ", rc);
 				CoreServices::sendStatusMessage("Ephys Socket: Could not read stream.");
 			}
 
@@ -223,9 +219,8 @@ void SocketThread::run()
 		if (connected)
 		{
 			if (error_flag) {
-				disconnectSocket();
 				const MessageManagerLock mmLock;
-				editor->enableInputs();
+				processor->disconnectSocket();
 				return;
 			}
 
@@ -317,7 +312,7 @@ void SocketThread::run()
 
 			if (error_flag) {
 				const MessageManagerLock mmLock;
-				editor->enableInputs();
+				processor->disconnectSocket();
 				return;
 			}
 		}

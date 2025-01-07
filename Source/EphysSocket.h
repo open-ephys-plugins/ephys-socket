@@ -41,6 +41,9 @@ namespace EphysSocketNode
         /** Create the DataThread object*/
         static DataThread* createDataThread(SourceNode* sn);
 
+        /** Registers the parameters for the DataThread */
+        void registerParameters() override;
+
         /** Returns true if socket is connected */
         bool foundInputSource() override;
 
@@ -51,6 +54,9 @@ namespace EphysSocketNode
             OwnedArray<DataStream>* sourceStreams,
             OwnedArray<DeviceInfo>* devices,
             OwnedArray<ConfigurationObject>* configurationObjects);
+
+        /** Handles parameter value changes */
+        void parameterValueChanged(Parameter* parameter) override;
 
         /** Resizes buffers when input parameters are changed*/
         void resizeBuffers();

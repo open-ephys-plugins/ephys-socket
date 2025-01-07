@@ -12,7 +12,7 @@ DataThread* EphysSocket::createDataThread(SourceNode* sn)
 	return new EphysSocket(sn);
 }
 
-EphysSocket::EphysSocket(SourceNode* sn) : DataThread(sn), socket("socket_thread")
+EphysSocket::EphysSocket(SourceNode* sn) : DataThread(sn), socket("socket_thread", this)
 {
 	port = DEFAULT_PORT;
 	sample_rate = DEFAULT_SAMPLE_RATE;
@@ -29,8 +29,6 @@ EphysSocket::EphysSocket(SourceNode* sn) : DataThread(sn), socket("socket_thread
 std::unique_ptr<GenericEditor> EphysSocket::createEditor(SourceNode* sn)
 {
 	std::unique_ptr<EphysSocketEditor> editor = std::make_unique<EphysSocketEditor>(sn, this);
-	socket.setEditor(editor.get());
-
 	return editor;
 }
 
@@ -38,14 +36,43 @@ EphysSocket::~EphysSocket()
 {
 }
 
+void EphysSocket::registerParameters()
+{
+	addIntParameter (Parameter::PROCESSOR_SCOPE, "port", "Port", "Port number to connect to", DEFAULT_PORT, MIN_PORT, MAX_PORT);
+	addFloatParameter(Parameter::PROCESSOR_SCOPE, "sample_rate", "Sample Rate", "Sample rate of incoming data", "Hz", DEFAULT_SAMPLE_RATE, MIN_SAMPLE_RATE, MAX_SAMPLE_RATE, 1.0f);
+	addFloatParameter(Parameter::PROCESSOR_SCOPE, "data_scale", "Scale", "Scale of incoming data", "", DEFAULT_DATA_SCALE, MIN_DATA_SCALE, MAX_DATA_SCALE, 0.1f);
+	addFloatParameter(Parameter::PROCESSOR_SCOPE, "data_offset", "Offset", "Offset of incoming data", "", DEFAULT_DATA_OFFSET, MIN_DATA_OFFSET, MAX_DATA_OFFSET, 1.0f);
+}
+
 void EphysSocket::disconnectSocket()
 {
 	socket.disconnectSocket();
+
+	getParameter("port")->setEnabled(true);
+	getParameter("sample_rate")->setEnabled(true);
+	getParameter("data_scale")->setEnabled(true);
+	getParameter("data_offset")->setEnabled(true);
+
+	if (sn->getEditor() != nullptr) // check if headless
+		static_cast<EphysSocketEditor*>(sn->getEditor())->disconnected();
 }
 
 bool EphysSocket::connectSocket(bool printOutput)
 {
-	return socket.connectSocket(port, printOutput);
+	if (socket.connectSocket(port, printOutput))
+	{
+		getParameter("port")->setEnabled(false);
+		getParameter("sample_rate")->setEnabled(false);
+		getParameter("data_scale")->setEnabled(false);
+		getParameter("data_offset")->setEnabled(false);
+
+		if (sn->getEditor() != nullptr) // check if headless
+			static_cast<EphysSocketEditor*>(sn->getEditor())->connected();
+
+		return true;
+	}
+
+	return false;
 }
 
 bool EphysSocket::errorFlag()
@@ -126,6 +153,28 @@ bool EphysSocket::foundInputSource()
 bool EphysSocket::isReady()
 {
 	return socket.isConnected();
+}
+
+void EphysSocket::parameterValueChanged(Parameter* parameter)
+{
+	if (parameter->getName() == "port")
+	{
+		port = (int)parameter->getValue();
+	}
+	else if (parameter->getName() == "sample_rate")
+	{
+		sample_rate = (float)parameter->getValue();
+		CoreServices::updateSignalChain (sn); // Update the signal chain to reflect the new sample rate
+	}
+	else if (parameter->getName() == "data_scale")
+	{
+		data_scale = (float)parameter->getValue();
+		CoreServices::updateSignalChain (sn); // Update the signal chain to reflect the new data scale
+	}
+	else if (parameter->getName() == "data_offset")
+	{
+		data_offset = (float)parameter->getValue();
+	}
 }
 
 bool EphysSocket::startAcquisition()
@@ -247,7 +296,7 @@ String EphysSocket::handleConfigMessage(const String& msg)
 
 					if (scale > MIN_DATA_SCALE && scale < MAX_DATA_SCALE)
 					{
-						data_scale = scale;
+						getParameter("data_scale")->setNextValue(scale);
 						LOGC("Scale updated to: ", scale);
 						return "SUCCESS";
 					}
@@ -260,7 +309,7 @@ String EphysSocket::handleConfigMessage(const String& msg)
 
 					if (offset >= MIN_DATA_OFFSET && offset < MAX_DATA_OFFSET)
 					{
-						data_offset = offset;
+						getParameter("data_offset")->setNextValue(offset);
 						LOGC("Offset updated to: ", offset);
 						return "SUCCESS";
 					}
@@ -273,7 +322,7 @@ String EphysSocket::handleConfigMessage(const String& msg)
 
 					if (_port > MIN_PORT && _port < MAX_PORT)
 					{
-						port = _port;
+						getParameter("port")->setNextValue(_port);
 						LOGC("Port updated to: ", _port);
 						return "SUCCESS";
 					}
@@ -286,7 +335,7 @@ String EphysSocket::handleConfigMessage(const String& msg)
 
 					if (frequency > MIN_SAMPLE_RATE && frequency < MAX_SAMPLE_RATE)
 					{
-						sample_rate = frequency;
+						getParameter("sample_rate")->setNextValue(frequency);
 						LOGC("Frequency updated to: ", sample_rate);
 						return "SUCCESS";
 					}

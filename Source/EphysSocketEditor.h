@@ -14,7 +14,6 @@ namespace EphysSocketNode
     class EphysSocket;
 
     class EphysSocketEditor : public GenericEditor, 
-                              public Label::Listener,
                               public Button::Listener
     {
 
@@ -32,20 +31,11 @@ namespace EphysSocketNode
         /** Called by processor graph at the end of the acquisition, reenables editor completely. */
         void stopAcquisition();
 
-        /** Called when configuration is saved. Adds editors config to xml. */
-        void saveCustomParametersToXml(XmlElement* xml) override;
+        /** Called by the processor when the socket is connected. */
+        void connected();
 
-        /** Called when configuration is loaded. Reads editors config from xml. */
-        void loadCustomParametersFromXml(XmlElement* xml) override;
-
-        /** Called when label is changed */
-        void labelTextChanged(Label* label);
-
-        // Changes colors and disables UI elements
-        void disableInputs();
-
-        // Changes colors and enables UI elements
-        void enableInputs();
+        /** Called by the processor when the socket is disconnected. */
+        void disconnected();
 
     private:
 
@@ -55,22 +45,6 @@ namespace EphysSocketNode
 
         String stringConnect = "CONNECT";
         String stringDisconnect = "DISCONNECT";
-
-        // Port
-        std::unique_ptr<Label> portLabel;
-        std::unique_ptr<Label> portInput;
-
-        // Fs
-        std::unique_ptr<Label> sampleRateLabel;
-        std::unique_ptr<Label> sampleRateInput;
-
-        // Scale
-        std::unique_ptr<Label> scaleLabel;
-        std::unique_ptr<Label> scaleInput;
-
-        // Offset
-        std::unique_ptr<Label> offsetLabel;
-        std::unique_ptr<Label> offsetInput;
 
         // Parent node
         EphysSocket* node;
