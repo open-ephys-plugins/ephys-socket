@@ -2,11 +2,11 @@ name: linux
 
 on: 
   push:
-    branches: [main,juce8]
+    branches: [main,juce8,testing-juce8]
   pull_request:
     
 env:
-  artifactoryApiKey: ${{ secrets.artifactoryApiKey }}
+  ARTIFACTORY_ACCESS_TOKEN: ${{ secrets.ARTIFACTORY_ACCESS_TOKEN }}
   build_dir: "Build"
   package: EphysSocket-linux
 
@@ -20,7 +20,14 @@ jobs:
       
     - name: set env vars
       run: |
-        echo "GUI_BRANCH=development-juce8" >> "$GITHUB_ENV"
+        if [ ${{github.ref_name}} == 'juce8' ]; then
+          echo "GUI_BRANCH=development-juce8" >> "$GITHUB_ENV"
+        elif [ ${{github.ref_name}} == 'testing-juce8' ]; then
+          echo "GUI_BRANCH=testing-juce8" >> "$GITHUB_ENV"
+        else
+          echo "Invalid branch : ${{github.ref_name}}"
+          exit 1
+        fi
 
     - name: setup
       run: |
@@ -38,7 +45,7 @@ jobs:
         make
 
     - name: deploy
-      if: github.ref == 'refs/heads/juce8' && steps.build.outcome == 'success'
+      if: github.ref == 'refs/heads/testing-juce8' && steps.build.outcome == 'success'
       run: |
         plugin_api=$(grep -rnw ../../plugin-GUI/Source -e '#define PLUGIN_API_VER' | grep -Eo "[0-9]*" | tail -1)
         tag=$(grep -w Source/OpenEphysLib.cpp -e 'info->libVersion' | grep -Eo "[0-9]+.[0-9]+.[0-9]+")
@@ -47,4 +54,4 @@ jobs:
         cp -r $build_dir/*.so plugins
         zipfile=${package}_${new_plugin_ver}.zip
         zip -r -X $zipfile plugins
-        curl -H "X-JFrog-Art-Api:$artifactoryApiKey" -T $zipfile "https://openephys.jfrog.io/artifactory/EphysSocket-plugin/linux/$zipfile"
+        curl -H "X-JFrog-Art-Api:$ARTIFACTORY_ACCESS_TOKEN" -T $zipfile "https://openephys.jfrog.io/artifactory/EphysSocket-plugin/linux/$zipfile"
