@@ -61,14 +61,17 @@ def currentTime():
     return time.time_ns() / (10 ** 9)
 
 # ---- STREAM DATA ---- #
-while (bufferIndex < totalBytes):
-    t1 = currentTime()
-    rc = tcpClient.sendto(header + bytesToSend[bufferIndex:bufferIndex+bytesPerBuffer], address)
-    t2 = currentTime()
-    
-    while ((t2 - t1) < bufferInterval):
+try:
+    while (bufferIndex < totalBytes):
+        t1 = currentTime()
+        rc = tcpClient.sendto(header + bytesToSend[bufferIndex:bufferIndex+bytesPerBuffer], address)
         t2 = currentTime()
-    
-    bufferIndex += bytesPerBuffer
+        
+        while ((t2 - t1) < bufferInterval):
+            t2 = currentTime()
+        
+        bufferIndex += bytesPerBuffer
 
-print("Done")
+    print("Done")
+except BrokenPipeError:
+    print("Connection closed by the server. Unable to send data. Exiting...")
