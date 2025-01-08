@@ -30,7 +30,7 @@ SocketThread::SocketThread (String name, EphysSocket* processor_)
 
 SocketThread::~SocketThread()
 {
-    stopThread (500);
+    stopThread (1000);
 
     if (socket != nullptr)
     {
@@ -75,7 +75,7 @@ bool SocketThread::connectSocket (int port, bool printOutput)
     error_flag = false;
 
     socket = std::make_unique<StreamingSocket>();
-    connected = socket->connect ("localhost", port);
+    connected = socket->connect ("localhost", port, 250);
 
     if (connected)
     {
