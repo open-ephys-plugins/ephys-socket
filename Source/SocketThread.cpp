@@ -47,6 +47,11 @@ void SocketThread::startAcquisition()
 void SocketThread::stopAcquisition()
 {
     acquiring = false;
+
+    if (shouldReconnect)
+    {
+        processor->disconnectSocket();
+    }
 }
 
 bool SocketThread::connectSocket (int port, bool printOutput)

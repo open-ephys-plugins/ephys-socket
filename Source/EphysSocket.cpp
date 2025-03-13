@@ -46,6 +46,8 @@ void EphysSocket::registerParameters()
 
 void EphysSocket::disconnectSocket()
 {
+    socket.signalThreadShouldExit();
+    socket.waitForThreadToExit(1000);
     socket.disconnectSocket();
 
     getParameter ("port")->setEnabled (true);
