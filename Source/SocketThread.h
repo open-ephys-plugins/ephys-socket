@@ -32,11 +32,13 @@
 
 namespace EphysSocketNode
 {
+	class EphysSocket;
+  
 	class SocketThread : public Thread
 	{
 	public:
 
-		SocketThread(String name);
+		SocketThread(String name, EphysSocket*);
 
 		~SocketThread();
 
@@ -86,6 +88,9 @@ namespace EphysSocketNode
 
 		/** Pointer to the editor */
 		EphysSocketEditor* editor;
+
+		/** Pointer to the plugin processor */
+		EphysSocket* processor;
 
 		/** TCP Socket object */
 		std::unique_ptr<StreamingSocket> socket;

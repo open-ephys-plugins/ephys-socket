@@ -38,13 +38,13 @@ intList_2 = (np.ones((int(Freq/2),)) * convertedValue2).astype('uint16')
 oneCycle = np.concatenate((intList_1, intList_2))
 allData = np.tile(oneCycle, (numChannels, totalDuration)).T
 
+# ---- WAIT FOR USER INPUT ---- #
+value = input("Press enter key to start...")
+
 # ---- CREATE THE SOCKET SERVER ---- #
 tcpServer = socket.socket(family=socket.AF_INET, type=socket.SOCK_STREAM)
 tcpServer.bind(('localhost', 9001))
 tcpServer.listen(1)
-
-# ---- WAIT FOR USER INPUT ---- #
-value = input("Press enter key to start...")
 
 print("Waiting for external connection to start...")
 (tcpClient, address) = tcpServer.accept()
@@ -61,14 +61,23 @@ def currentTime():
     return time.time_ns() / (10 ** 9)
 
 # ---- STREAM DATA ---- #
-while (bufferIndex < totalBytes):
-    t1 = currentTime()
-    rc = tcpClient.sendto(header + bytesToSend[bufferIndex:bufferIndex+bytesPerBuffer], address)
-    t2 = currentTime()
-    
-    while ((t2 - t1) < bufferInterval):
+try:
+    while (bufferIndex < totalBytes):
+        t1 = currentTime()
+        rc = tcpClient.sendto(header + bytesToSend[bufferIndex:bufferIndex+bytesPerBuffer], address)
         t2 = currentTime()
-    
-    bufferIndex += bytesPerBuffer
+        
+        while ((t2 - t1) < bufferInterval):
+            t2 = currentTime()
+        
+        bufferIndex += bytesPerBuffer
 
-print("Done")
+    print("Done")
+except BrokenPipeError:
+    print("Connection closed by the server. Unable to send data. Exiting...")
+
+except ConnectionAbortedError:
+    print("Connection was aborted, unable to send data. Try disconnecting and reconnecting the remote client. Exiting...")
+
+except ConnectionResetError:
+    print("Connection was aborted, unable to send data. Try disconnecting and reconnecting the remote client. Exiting...")
