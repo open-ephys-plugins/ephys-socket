@@ -6,7 +6,7 @@ on:
   pull_request:
 
 env:
-  artifactoryApiKey: ${{ secrets.artifactoryApiKey }}
+  ARTIFACTORY_ACCESS_TOKEN: ${{ secrets.ARTIFACTORY_ACCESS_TOKEN }}
   build_dir: "Build/Release"
   package: EphysSocket-windows
 
@@ -28,7 +28,7 @@ jobs:
         cd plugin-GUI/Build
         cmake -G "Visual Studio 16 2019" -A x64 .. 
         mkdir Release && cd Release
-        curl -L https://openephysgui.jfrog.io/artifactory/Libraries/open-ephys-lib-v0.6.0.zip --output open-ephys-lib.zip 
+        curl -L https://openephys.jfrog.io/artifactory/GUI-binaries/Libraries/open-ephys-lib-v0.6.0.zip --output open-ephys-lib.zip 
         unzip open-ephys-lib.zip
       shell: bash
 
@@ -58,5 +58,5 @@ jobs:
         cp $build_dir/*.dll plugins
         zipfile=${package}_${new_plugin_ver}.zip
         powershell Compress-Archive -Path "plugins" -DestinationPath ${zipfile}
-        curl -H "X-JFrog-Art-Api:$artifactoryApiKey" -T $zipfile "https://openephys.jfrog.io/artifactory/EphysSocket-plugin/windows/$zipfile"
+        curl -H "X-JFrog-Art-Api:$ARTIFACTORY_ACCESS_TOKEN" -T $zipfile "https://openephys.jfrog.io/artifactory/EphysSocket-plugin/windows/$zipfile"
       shell: bash
