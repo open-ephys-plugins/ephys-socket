@@ -38,7 +38,7 @@ extern "C" EXPORT void getLibInfo (Plugin::LibraryInfo* info)
 {
     info->apiVersion = PLUGIN_API_VER;
     info->name = "Ephys Socket";
-    info->libVersion = "0.5.0";
+    info->libVersion = "0.5.1";
     info->numPlugins = NUM_PLUGINS;
 }
 
