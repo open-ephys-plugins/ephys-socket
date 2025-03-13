@@ -3,11 +3,12 @@
 #endif
 
 #include "SocketThread.h"
+#include "EphysSocket.h"
 
 using namespace EphysSocketNode;
 
-SocketThread::SocketThread(String name)
-	: Thread(name), editor(NULL)
+SocketThread::SocketThread(String name, EphysSocket* processor_)
+	: Thread(name), editor(NULL), processor(processor_)
 {
 	lastPacketReceived = time(nullptr);
 
@@ -51,6 +52,12 @@ void SocketThread::startAcquisition()
 void SocketThread::stopAcquisition()
 {
 	acquiring = false;
+
+	if (shouldReconnect)
+	{
+		processor->disconnectSocket();
+		editor->enableInputs();
+	}
 }
 
 bool SocketThread::connectSocket(int port, bool printOutput)

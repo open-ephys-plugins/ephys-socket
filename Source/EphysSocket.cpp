@@ -12,7 +12,7 @@ DataThread* EphysSocket::createDataThread(SourceNode* sn)
 	return new EphysSocket(sn);
 }
 
-EphysSocket::EphysSocket(SourceNode* sn) : DataThread(sn), socket("socket_thread")
+EphysSocket::EphysSocket(SourceNode* sn) : DataThread(sn), socket("socket_thread", this)
 {
 	port = DEFAULT_PORT;
 	sample_rate = DEFAULT_SAMPLE_RATE;
@@ -39,7 +39,9 @@ EphysSocket::~EphysSocket()
 }
 
 void EphysSocket::disconnectSocket()
-{
+{    
+	socket.signalThreadShouldExit();
+	socket.waitForThreadToExit(1000);
 	socket.disconnectSocket();
 }
 
