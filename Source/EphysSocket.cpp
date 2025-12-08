@@ -42,18 +42,20 @@ void EphysSocket::registerParameters()
     addFloatParameter (Parameter::PROCESSOR_SCOPE, "sample_rate", "Sample Rate", "Sample rate of incoming data", "Hz", DEFAULT_SAMPLE_RATE, MIN_SAMPLE_RATE, MAX_SAMPLE_RATE, 1.0f);
     addFloatParameter (Parameter::PROCESSOR_SCOPE, "data_scale", "Scale", "Scale of incoming data", "", DEFAULT_DATA_SCALE, MIN_DATA_SCALE, MAX_DATA_SCALE, 0.1f);
     addFloatParameter (Parameter::PROCESSOR_SCOPE, "data_offset", "Offset", "Offset of incoming data", "", DEFAULT_DATA_OFFSET, MIN_DATA_OFFSET, MAX_DATA_OFFSET, 1.0f);
+    addStringParameter (Parameter::PROCESSOR_SCOPE, "connection_state", "Connection State", "Set the socket connection state (CONNECTED/DISCONNECTED)", DEFAULT_CONNECTION_STATE);
 }
 
 void EphysSocket::disconnectSocket()
 {
     socket.signalThreadShouldExit();
-    socket.waitForThreadToExit(1000);
+    socket.waitForThreadToExit (1000);
     socket.disconnectSocket();
 
     getParameter ("port")->setEnabled (true);
     getParameter ("sample_rate")->setEnabled (true);
     getParameter ("data_scale")->setEnabled (true);
     getParameter ("data_offset")->setEnabled (true);
+    getParameter ("connection_state")->setNextValue (CONNECTION_STATE_DISCONNECTED);
 
     if (sn->getEditor() != nullptr) // check if headless
         static_cast<EphysSocketEditor*> (sn->getEditor())->disconnected();
@@ -61,7 +63,9 @@ void EphysSocket::disconnectSocket()
 
 bool EphysSocket::connectSocket (bool printOutput)
 {
-    if (socket.connectSocket (port, printOutput))
+    const bool connected = socket.connectSocket (port, printOutput);
+
+    if (connected)
     {
         getParameter ("port")->setEnabled (false);
         getParameter ("sample_rate")->setEnabled (false);
@@ -70,11 +74,11 @@ bool EphysSocket::connectSocket (bool printOutput)
 
         if (sn->getEditor() != nullptr) // check if headless
             static_cast<EphysSocketEditor*> (sn->getEditor())->connected();
-
-        return true;
     }
 
-    return false;
+    getParameter ("connection_state")->setNextValue (connected ? CONNECTION_STATE_CONNECTED : CONNECTION_STATE_DISCONNECTED);
+
+    return connected;
 }
 
 bool EphysSocket::errorFlag()
@@ -175,6 +179,10 @@ void EphysSocket::parameterValueChanged (Parameter* parameter)
     else if (parameter->getName() == "data_offset")
     {
         data_offset = (float) parameter->getValue();
+    }
+    else if (parameter->getName() == "connection_state")
+    {
+        parameter->setNextValue (socket.isConnected() ? CONNECTION_STATE_CONNECTED : CONNECTION_STATE_DISCONNECTED);
     }
 }
 
@@ -283,15 +291,11 @@ String EphysSocket::handleConfigMessage (const String& msg)
     // ES OFFSET <data_offset>      - Updates the offset to data_offset
     // ES PORT <port>               - Updates the port number that EphysSocket connects to
     // ES FREQUENCY <sample_rate>   - Updates the sampling rate
+    // ES CONNECTED <connected>     - Updates the connection state
 
     if (CoreServices::getAcquisitionStatus())
     {
         return "Ephys Socket plugin cannot update settings while acquisition is active.";
-    }
-
-    if (socket.isConnected())
-    {
-        return "Ephys Socket plugin cannot update settings while connected to an active socket.";
     }
 
     StringArray parts = StringArray::fromTokens (msg, " ", "");
@@ -302,6 +306,11 @@ String EphysSocket::handleConfigMessage (const String& msg)
         {
             if (parts.size() == 3)
             {
+                if (socket.isConnected() && ! parts[1].equalsIgnoreCase ("CONNECTION_STATE"))
+                {
+                    return "Ephys Socket plugin cannot update settings while connected to an active socket.";
+                }
+
                 if (parts[1].equalsIgnoreCase ("SCALE"))
                 {
                     float scale = parts[2].getFloatValue();
@@ -353,6 +362,34 @@ String EphysSocket::handleConfigMessage (const String& msg)
                     }
 
                     return "Invalid frequency requested. Frequency can be set between '" + String (MIN_SAMPLE_RATE) + "' and '" + String (MAX_SAMPLE_RATE) + "'";
+                }
+                else if (parts[1].equalsIgnoreCase ("CONNECTION_STATE"))
+                {
+                    bool connected { false };
+                    const bool connected_state = parts[2].equalsIgnoreCase (CONNECTION_STATE_CONNECTED);
+                    const bool disconnected_state = parts[2].equalsIgnoreCase (CONNECTION_STATE_DISCONNECTED);
+
+                    if ((! connected_state) && (! disconnected_state))
+                    {
+                        LOGC ("Invalid connection state: ", parts[2]);
+                        return String ("Connection state must be ") + CONNECTION_STATE_CONNECTED + " or " + CONNECTION_STATE_CONNECTED;
+                    }
+
+                    if (connected_state)
+                    {
+                        LOGC ("Request socket connect");
+                        connected = connectSocket();
+                        LOGC (connected ? "Connection success" : "Connection failed");
+                    }
+                    else
+                    {
+                        LOGC ("Request socket disconnect");
+                        disconnectSocket();
+                        LOGC ("Socket disconnected");
+                        connected = false;
+                    }
+
+                    return connected ? CONNECTION_STATE_CONNECTED : CONNECTION_STATE_DISCONNECTED;
                 }
                 else
                 {

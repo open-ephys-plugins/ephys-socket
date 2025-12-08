@@ -11,21 +11,26 @@ namespace EphysSocketNode
 class EphysSocket : public DataThread
 {
 public:
+    /** Connection states */
+    static const constexpr char const* CONNECTION_STATE_CONNECTED { "CONNECTED" };
+    static const constexpr char const* CONNECTION_STATE_DISCONNECTED { "DISCONNECTED" };
+
     /** Default parameters */
-    const int DEFAULT_PORT = 9001;
-    const float DEFAULT_SAMPLE_RATE = 30000.0f;
-    const float DEFAULT_DATA_SCALE = 1.0f; // 0.195f for Intan devices
-    const float DEFAULT_DATA_OFFSET = 0.0f; // 32768.0f for Intan devices
+    static constexpr int DEFAULT_PORT { 9001 };
+    static constexpr float DEFAULT_SAMPLE_RATE { 30000.0f };
+    static constexpr float DEFAULT_DATA_SCALE { 1.0f }; // 0.195f for Intan devices
+    static constexpr float DEFAULT_DATA_OFFSET { 0.0f }; // 32768.0f for Intan devices
+    static constexpr char const* DEFAULT_CONNECTION_STATE { CONNECTION_STATE_DISCONNECTED };
 
     /** Parameter limits */
-    const float MIN_DATA_SCALE = 0.0f;
-    const float MAX_DATA_SCALE = 9999.9f;
-    const float MIN_DATA_OFFSET = 0;
-    const float MAX_DATA_OFFSET = 65536;
-    const float MIN_PORT = 1023;
-    const float MAX_PORT = 65535;
-    const float MIN_SAMPLE_RATE = 0;
-    const float MAX_SAMPLE_RATE = 50000.0f;
+    static constexpr float MIN_DATA_SCALE { 0.0f };
+    static constexpr float MAX_DATA_SCALE { 9999.9f };
+    static constexpr float MIN_DATA_OFFSET { 0 };
+    static constexpr float MAX_DATA_OFFSET { 65536 };
+    static constexpr float MIN_PORT { 1023 };
+    static constexpr float MAX_PORT { 65535 };
+    static constexpr float MIN_SAMPLE_RATE { 0 };
+    static constexpr float MAX_SAMPLE_RATE { 50000.0f };
 
     /** Constructor */
     EphysSocket (SourceNode* sn);
