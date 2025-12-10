@@ -12,8 +12,8 @@ class EphysSocket : public DataThread
 {
 public:
     /** Connection states */
-    static const constexpr char const* CONNECTION_STATE_CONNECTED { "CONNECTED" };
-    static const constexpr char const* CONNECTION_STATE_DISCONNECTED { "DISCONNECTED" };
+    static const constexpr char* CONNECTION_STATE_CONNECTED { "CONNECTED" };
+    static const constexpr char* CONNECTION_STATE_DISCONNECTED { "DISCONNECTED" };
 
     /** Default parameters */
     static constexpr int DEFAULT_PORT { 9001 };

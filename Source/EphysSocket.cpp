@@ -48,7 +48,7 @@ void EphysSocket::registerParameters()
 void EphysSocket::disconnectSocket()
 {
     socket.signalThreadShouldExit();
-    socket.waitForThreadToExit (1000);
+    socket.waitForThreadToExit(1000);
     socket.disconnectSocket();
 
     getParameter ("port")->setEnabled (true);
@@ -182,6 +182,10 @@ void EphysSocket::parameterValueChanged (Parameter* parameter)
     }
     else if (parameter->getName() == "connection_state")
     {
+        // This is mainly useful when the application settings have
+        // for some reason saved connection_state DISCONNECTED. At 
+        // startup, the connection state will be synced with the actual
+        // state of the socket
         parameter->setNextValue (socket.isConnected() ? CONNECTION_STATE_CONNECTED : CONNECTION_STATE_DISCONNECTED);
     }
 }
