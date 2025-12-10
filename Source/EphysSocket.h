@@ -39,7 +39,7 @@ public:
     ~EphysSocket();
 
     /** Creates custom editor */
-    std::unique_ptr<GenericEditor> createEditor (SourceNode* sn);
+    std::unique_ptr<GenericEditor> createEditor (SourceNode* sn) override;
 
     /** Create the DataThread object*/
     static DataThread* createDataThread (SourceNode* sn);
@@ -56,13 +56,13 @@ public:
                          OwnedArray<SpikeChannel>* spikeChannels,
                          OwnedArray<DataStream>* sourceStreams,
                          OwnedArray<DeviceInfo>* devices,
-                         OwnedArray<ConfigurationObject>* configurationObjects);
+                         OwnedArray<ConfigurationObject>* configurationObjects) override;
 
     /** Handles parameter value changes */
     void parameterValueChanged (Parameter* parameter) override;
 
     /** Resizes buffers when input parameters are changed*/
-    void resizeBuffers();
+    void resizeBuffers() override;
 
     /** Disconnects the socket */
     void disconnectSocket();
