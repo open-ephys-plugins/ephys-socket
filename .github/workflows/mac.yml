@@ -4,6 +4,9 @@ on:
   push:
     branches: [main]
   pull_request:
+    branches: [main]
+  release:
+    types: [published]
 
 env:
   ARTIFACTORY_ACCESS_TOKEN: ${{ secrets.ARTIFACTORY_ACCESS_TOKEN }}
@@ -11,7 +14,74 @@ env:
   package: EphysSocket-mac
 
 jobs:
+  
+  check-semver:
+    runs-on: ubuntu-22.04
+    if: github.event_name != 'release'
+    steps:
+      - name: Checkout current version
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Find previous release
+        id: previous-release
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          echo "RELEASE_NAME=$(gh release list -L 1 --json tagName -q .[0].tagName)" >> $GITHUB_OUTPUT
+
+      - name: Verify release name
+        id: verify-release
+        if: steps.previous-release.outputs.RELEASE_NAME == ''
+        run: |
+          echo "No previous releases found. Skipping the semver check."
+          exit 0
+          
+      - name: Checkout last release version
+        if: steps.previous-release.outputs.RELEASE_NAME != ''
+        uses: actions/checkout@v4
+        with:
+          ref: ${{ steps.previous-release.outputs.RELEASE_NAME }}
+          path: last-release
+          sparse-checkout: |
+            Source/OpenEphysLib.cpp
+          sparse-checkout-cone-mode: false
+
+      - name: Extract Versions
+        if: steps.previous-release.outputs.RELEASE_NAME != ''
+        id: extract-versions
+        run: |
+          echo "CURRENT_VERSION=$(cat ./Source/OpenEphysLib.cpp | grep -w -e 'info->libVersion' | grep -Eo "[0-9]+.[0-9]+.[0-9]+")" >> $GITHUB_OUTPUT
+          echo "PREVIOUS_VERSION=$(cat ./last-release/Source/OpenEphysLib.cpp | grep -w -e 'info->libVersion' | grep -Eo "[0-9]+.[0-9]+.[0-9]+")" >> $GITHUB_OUTPUT
+      
+      - name: Setup Python
+        if: steps.previous-release.outputs.RELEASE_NAME != ''
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.10.12"
+
+      - name: Install semver
+        if: steps.previous-release.outputs.RELEASE_NAME != ''
+        run: python -m pip install semver
+
+      - name: Compare Versions
+        if: steps.previous-release.outputs.RELEASE_NAME != ''
+        run: |
+         version_current=${{ steps.extract-versions.outputs.CURRENT_VERSION }}
+         version_release=${{ steps.extract-versions.outputs.PREVIOUS_VERSION }}
+ 
+         echo "Current Version: $version_current"
+         echo "Release Version: $version_release"
+         
+         if [ ! $(python -c "import semver; print(semver.compare(\"$version_current\", \"$version_release\"))") == 1 ]; then
+           echo "::error title=Invalid version number::Version number must be increased"
+           exit 1
+         fi
+
   build-mac:
+    needs: [check-semver]
+    if: always() && !failure() && !cancelled()
     runs-on: [macos-latest]
 
     steps:
@@ -31,8 +101,29 @@ jobs:
         cmake -G "Xcode" ..
         xcodebuild -configuration Release
 
+    - name: Collect artifact
+      uses: actions/upload-artifact@v4
+      if: steps.build.outcome == 'success' && always()
+      with:
+        name: Artifact
+        if-no-files-found: error
+        path: |
+          $build_dir
+
+  deploy-mac:
+
+    needs: [build-mac]
+    runs-on: macos-latest
+    if: github.event_name == 'release' && always() && !failure() && !cancelled()
+
+    steps:
+    - name: Download build folder
+      uses: actions/download-artifact@v4
+      with:
+        name: Artifact
+        path: $build_dir
+
     - name: deploy
-      if: github.ref == 'refs/heads/main' && steps.build.outcome == 'success'
       env:
         MACOS_CERTIFICATE: ${{ secrets.BUILD_CERTIFICATE_BASE64 }}
         MACOS_CERTIFICATE_PWD: ${{ secrets.BUILD_CERTIFICATE_PWD }}
