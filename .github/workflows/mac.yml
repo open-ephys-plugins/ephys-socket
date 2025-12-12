@@ -107,8 +107,7 @@ jobs:
       with:
         name: Artifact
         if-no-files-found: error
-        path: |
-          $build_dir
+        path: ${{ env.build_dir }}
 
   deploy-mac:
 
@@ -121,7 +120,7 @@ jobs:
       uses: actions/download-artifact@v4
       with:
         name: Artifact
-        path: $build_dir
+        path: ${{ env.build_dir }}
 
     - name: deploy
       env:
