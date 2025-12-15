@@ -20,7 +20,6 @@ public:
     static constexpr float DEFAULT_SAMPLE_RATE { 30000.0f };
     static constexpr float DEFAULT_DATA_SCALE { 1.0f }; // 0.195f for Intan devices
     static constexpr float DEFAULT_DATA_OFFSET { 0.0f }; // 32768.0f for Intan devices
-    static constexpr char const* DEFAULT_CONNECTION_STATE { CONNECTION_STATE_DISCONNECTED };
 
     /** Parameter limits */
     static constexpr float MIN_DATA_SCALE { 0.0f };
