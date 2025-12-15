@@ -61,9 +61,7 @@ void EphysSocket::disconnectSocket()
 
 bool EphysSocket::connectSocket (bool printOutput)
 {
-    const bool connected = socket.connectSocket (port, printOutput);
-
-    if (connected)
+    if (socket.connectSocket (port, printOutput))
     {
         getParameter ("port")->setEnabled (false);
         getParameter ("sample_rate")->setEnabled (false);
@@ -72,9 +70,11 @@ bool EphysSocket::connectSocket (bool printOutput)
 
         if (sn->getEditor() != nullptr) // check if headless
             static_cast<EphysSocketEditor*> (sn->getEditor())->connected();
+
+        return true;
     }
 
-    return connected;
+    return false;
 }
 
 bool EphysSocket::errorFlag()
