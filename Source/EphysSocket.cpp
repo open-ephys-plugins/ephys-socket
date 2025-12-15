@@ -47,7 +47,7 @@ void EphysSocket::registerParameters()
 void EphysSocket::disconnectSocket()
 {
     socket.signalThreadShouldExit();
-    socket.waitForThreadToExit(1000);
+    socket.waitForThreadToExit (1000);
     socket.disconnectSocket();
 
     getParameter ("port")->setEnabled (true);
@@ -278,20 +278,18 @@ bool EphysSocket::updateBuffer()
 String EphysSocket::handleConfigMessage (const String& msg)
 {
     // Available commands:
-    // ES INFO - Returns info on current variables that can be modified over HTTP
+    // ES INFO                      - Returns info on current variables that can be modified over HTTP
     // ES SCALE <data_scale>        - Updates the data scale to data_scale
     // ES OFFSET <data_offset>      - Updates the offset to data_offset
     // ES PORT <port>               - Updates the port number that EphysSocket connects to
     // ES FREQUENCY <sample_rate>   - Updates the sampling rate
+    // ES CONNECTION_STATE          - Returns the connection state (CONNECTED/DISCONNECTED)
+    // ES CONNECT                   - Connect the socket
+    // ES DISCCONNECT               - Disconnect the socket
 
     if (CoreServices::getAcquisitionStatus())
     {
         return "Ephys Socket plugin cannot update settings while acquisition is active.";
-    }
-
-    if (socket.isConnected())
-    {
-        return "Ephys Socket plugin cannot update settings while connected to an active socket.";
     }
 
     StringArray parts = StringArray::fromTokens (msg, " ", "");
@@ -302,6 +300,11 @@ String EphysSocket::handleConfigMessage (const String& msg)
         {
             if (parts.size() == 3)
             {
+                if (socket.isConnected())
+                {
+                    return "Ephys Socket plugin cannot update settings while connected to an active socket.";
+                }
+
                 if (parts[1].equalsIgnoreCase ("SCALE"))
                 {
                     float scale = parts[2].getFloatValue();
@@ -364,6 +367,23 @@ String EphysSocket::handleConfigMessage (const String& msg)
                 if (parts[1].equalsIgnoreCase ("INFO"))
                 {
                     return "Port = " + String (port) + ". Sample rate = " + String (sample_rate) + "Scale = " + String (data_scale) + ". Offset = " + String (data_offset) + ".";
+                }
+                else if (parts[1].equalsIgnoreCase ("CONNECTION_STATUS"))
+                {
+                    return socket.isConnected() ? CONNECTION_STATE_CONNECTED : CONNECTION_STATE_DISCONNECTED;
+                }
+                else if (parts[1].equalsIgnoreCase ("CONNECT"))
+                {
+                    LOGC ("Request socket connect");
+                    const auto connected = connectSocket();
+                    LOGC (connected ? "Connection success" : "Connection failed");
+                    return connected ? CONNECTION_STATE_CONNECTED : CONNECTION_STATE_DISCONNECTED;
+                }
+                else if (parts[1].equalsIgnoreCase ("DISCONNECT"))
+                {
+                    disconnectSocket();
+                    LOGC ("Socket disconnected");
+                    return CONNECTION_STATE_DISCONNECTED;
                 }
                 else
                 {
