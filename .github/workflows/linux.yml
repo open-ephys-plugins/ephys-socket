@@ -83,6 +83,9 @@ jobs:
     needs: [check-semver]
     if: always() && !failure() && !cancelled()
     runs-on: [ubuntu-22.04]
+    outputs:
+      PLUGIN_API: ${{ steps.setup.outputs.PLUGIN_API }}
+      PLUGIN_VERSION: ${{ steps.setup.outputs.PLUGIN_VERSION }}
 
     steps:
     - name: Checkout
@@ -90,11 +93,13 @@ jobs:
 
     - name: setup
       run: |
+        echo "PLUGIN_VERSION=$(grep -w Source/OpenEphysLib.cpp -e 'info->libVersion' | grep -Eo "[0-9]+.[0-9]+.[0-9]+")" >> "$GITHUB_OUTPUT"
         sudo apt update
         cd ../..
         git clone https://github.com/open-ephys/plugin-GUI.git --branch main
         sudo ./plugin-GUI/Resources/Scripts/install_linux_dependencies.sh
         cd plugin-GUI/$build_dir && cmake -G "Unix Makefiles" -DCMAKE_BUILD_TYPE=Release ..
+        echo "PLUGIN_API=$(grep -rnw ../Source -e '#define PLUGIN_API_VER' | grep -Eo "[0-9]*" | tail -1)" >> "$GITHUB_OUTPUT"
 
     - name: build
       id: build
@@ -126,8 +131,8 @@ jobs:
 
     - name: deploy
       run: |
-        plugin_api=$(grep -rnw ../../plugin-GUI/Source -e '#define PLUGIN_API_VER' | grep -Eo "[0-9]*" | tail -1)
-        tag=$(grep -w Source/OpenEphysLib.cpp -e 'info->libVersion' | grep -Eo "[0-9]+.[0-9]+.[0-9]+")
+        plugin_api=${{ needs.build-linux.outputs.PLUGIN_API }}
+        tag=${{ needs.build-linux.outputs.PLUGIN_VERSION }}
         new_plugin_ver=$tag-API$plugin_api
         mkdir plugins 
         cp -r $build_dir/*.so plugins

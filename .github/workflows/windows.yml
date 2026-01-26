@@ -87,6 +87,9 @@ jobs:
     needs: [check-semver]
     if: always() && !failure() && !cancelled()
     runs-on: [windows-latest]
+    outputs:
+      PLUGIN_API: ${{ steps.setup.outputs.PLUGIN_API }}
+      PLUGIN_VERSION: ${{ steps.setup.outputs.PLUGIN_VERSION }}
     
     steps:
     - name: Checkout
@@ -94,6 +97,7 @@ jobs:
 
     - name: setup
       run: |
+        echo "PLUGIN_VERSION=$(grep -w Source/OpenEphysLib.cpp -e 'info->libVersion' | grep -Eo "[0-9]+.[0-9]+.[0-9]+")" >> "$GITHUB_OUTPUT"
         cd ../..
         git clone https://github.com/open-ephys/plugin-GUI.git --branch main
         cd plugin-GUI/Build
@@ -101,6 +105,7 @@ jobs:
         mkdir Release && cd Release
         curl -L https://openephys.jfrog.io/artifactory/GUI-binaries/Libraries/open-ephys-lib-v1.0.0.zip --output open-ephys-lib.zip 
         unzip open-ephys-lib.zip
+        echo "PLUGIN_API=$(grep -rnw ../../Source -e '#define PLUGIN_API_VER' | grep -Eo "[0-9]*" | tail -1)" >> "$GITHUB_OUTPUT"
       shell: bash
 
     - name: configure
@@ -142,8 +147,8 @@ jobs:
 
     - name: deploy
       run: |
-        plugin_api=$(grep -rnw ../../plugin-GUI/Source -e '#define PLUGIN_API_VER' | grep -Eo "[0-9]*" | tail -1)
-        tag=$(grep -w Source/OpenEphysLib.cpp -e 'info->libVersion' | grep -Eo "[0-9]+.[0-9]+.[0-9]+")
+        plugin_api=${{ needs.build-windows.outputs.PLUGIN_API }}
+        tag=${{ needs.build-windows.outputs.PLUGIN_VERSION }}
         new_plugin_ver=$tag-API$plugin_api
         mkdir plugins
         cp $build_dir/*.dll plugins
